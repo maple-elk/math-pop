@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Pop! 🚀 Elementary Math & Spatial Brain Teasers</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎈</text></svg>">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header Area -->
+    <header class="quiz-header">
+      <div class="logo">
+        <span class="logo-icon">🎈</span>
+        <h1>Math Pop!</h1>
+      </div>
+
+      <div class="header-controls">
+        <div class="streak-pill" id="streakPill" title="Current streak">
+          <span class="star-icon">⭐</span>
+          <span id="streakCount">0</span> in a row!
+        </div>
+        <button id="soundToggle" class="icon-btn" aria-label="Toggle Sound" title="Toggle Sound">
+          🔊
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Primary Navigation Tabs: Grades & Activities -->
+    <nav class="app-tabs" role="tablist" aria-label="Grades and Activities">
+      <button class="app-tab active" id="tabGrade2" role="tab" aria-selected="true" data-tab="grade2">
+        2nd Grade
+      </button>
+      <button class="app-tab" id="tabGrade3" role="tab" aria-selected="false" data-tab="grade3">
+        3rd Grade
+      </button>
+      <button class="app-tab" id="tabGrade4" role="tab" aria-selected="false" data-tab="grade4">
+        4th Grade
+      </button>
+      <button class="app-tab" id="tabGrade5" role="tab" aria-selected="false" data-tab="grade5">
+        5th Grade
+      </button>
+      <button class="app-tab" id="tabRiddles" role="tab" aria-selected="false" data-tab="riddles">
+        🧩 Teasers
+      </button>
+      <button class="app-tab" id="tabScience" role="tab" aria-selected="false" data-tab="science">
+        🔬 Science Lab
+      </button>
+    </nav>
+
+    <!-- TAB SECTION: MATH (Grades 2-5) -->
+    <section id="mathSection" class="tab-panel active" role="tabpanel">
+      <!-- Dynamic Topic Bar for the Selected Grade -->
+      <div class="mode-selector" id="topicBar" role="radiogroup" aria-label="Topic Selector">
+        <!-- Topic buttons injected dynamically based on grade -->
+      </div>
+
+      <!-- Main Flashcard Pop-Up Card -->
+      <main class="card-stage">
+        <div class="popup-card" id="card">
+          <div class="card-badge" id="cardBadge">2nd Grade • Addition</div>
+
+          <!-- Problem Expression Display Area -->
+          <div class="equation-container" id="equationContainer">
+            <div class="equation" id="equation">
+              <span class="num" id="numA">8</span>
+              <span class="op" id="operator">+</span>
+              <span class="num" id="numB">7</span>
+              <span class="equals">=</span>
+              <span class="solution-slot" id="solutionSlot">
+                <span class="question-mark" id="questionMark">?</span>
+                <span class="solution-val hidden" id="solutionVal">15</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Optional Child Answer Input -->
+          <div class="interactive-input-zone" id="inputZone">
+            <input 
+              type="text" 
+              id="answerInput" 
+              placeholder="Type answer (or hit Space)" 
+              autocomplete="off"
+            />
+            <div class="input-feedback" id="inputFeedback"></div>
+          </div>
+
+          <!-- Visualizer & Step-by-Step Explanation Area -->
+          <div class="visualizer" id="visualizer" aria-label="Visual representation">
+            <div class="dots-group" id="dotsA"></div>
+            <div class="visualizer-op" id="visualizerOp">+</div>
+            <div class="dots-group" id="dotsB"></div>
+          </div>
+
+          <!-- Detailed Step Breakdown (Fractions, PEMDAS, Multi-step) -->
+          <div class="step-explanation hidden" id="stepExplanation">
+            <!-- Injected step breakdown -->
+          </div>
+
+          <!-- Bottom Spacebar Action Prompt Bar -->
+          <div class="spacebar-bar-wrapper">
+            <button id="actionBtn" class="spacebar-btn">
+              <span class="key-cap">SPACE</span>
+              <span class="action-text" id="actionText">Reveal Solution</span>
+            </button>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <!-- TAB SECTION: SPATIAL & VISUAL RIDDLES / BRAIN TEASERS -->
+    <section id="riddlesSection" class="tab-panel hidden" role="tabpanel">
+      <!-- Teaser Tracks: Logic Riddles, Visual & Spatial, Mental 3D -->
+      <div class="mode-selector" id="teaserTrackBar" role="radiogroup" aria-label="Teaser Track">
+        <button class="teaser-track-btn active" data-track="logic">🕵️ Logic Riddles (12 Slides)</button>
+        <button class="teaser-track-btn" data-track="visual">🎨 Visual &amp; Spatial (10 Slides)</button>
+        <button class="teaser-track-btn" data-track="mental">🧠 Mental 3D (6 Slides)</button>
+      </div>
+
+      <!-- Sequential Slide Navigation Toolbar -->
+      <div class="slide-nav-toolbar" aria-label="Slide Navigation">
+        <button id="prevSlideBtn" class="slide-nav-btn" title="Previous Slide (or Left Arrow)">← Prev</button>
+        <div class="slide-progress-info">
+          <span class="slide-counter-badge" id="slideIndicator">Slide 1 of 12</span>
+          <div class="slide-dots" id="slideDots"></div>
+        </div>
+        <button id="nextSlideBtn" class="slide-nav-btn" title="Next Slide (or Right Arrow)">Next →</button>
+      </div>
+
+      <!-- Main Riddle Pop-Up Card -->
+      <main class="card-stage">
+        <div class="popup-card riddle-card" id="riddleCard">
+          <div class="card-badge" id="riddleBadge">Slide 1 of 12 • Logic Riddle</div>
+
+          <!-- Riddle Question Header -->
+          <div class="riddle-header">
+            <h2 class="riddle-question" id="riddleQuestion">What comes next in the pattern?</h2>
+          </div>
+
+          <!-- Graphic Viewport (SVGs rendered dynamically) -->
+          <div class="riddle-viewport" id="riddleViewport">
+            <!-- SVG injected here -->
+          </div>
+
+          <!-- Optional Riddle Input Zone (e.g. for typing number of edges/vertices) -->
+          <div class="interactive-input-zone" id="riddleInputZone">
+            <input 
+              type="text" 
+              id="riddleAnswerInput" 
+              placeholder="Type answer (or hit Space)" 
+              autocomplete="off"
+            />
+            <div class="input-feedback" id="riddleInputFeedback"></div>
+          </div>
+
+          <!-- Solution & Explanation Display -->
+          <div class="riddle-solution-box hidden" id="riddleSolutionBox">
+            <div class="riddle-answer-title" id="riddleAnswerTitle">Answer: Triangle</div>
+            <div class="riddle-explanation" id="riddleExplanation">The pattern repeats: Circle, Square, Triangle!</div>
+          </div>
+
+          <!-- Spacebar Action Button -->
+          <div class="spacebar-bar-wrapper">
+            <button id="riddleActionBtn" class="spacebar-btn">
+              <span class="key-cap">SPACE</span>
+              <span class="action-text" id="riddleActionText">Reveal Solution</span>
+            </button>
+          </div>
+        </div>
+      </main>
+    </section>
+ 
+    <!-- TAB SECTION: SCIENCE LAB (PHYSICS, ENGINEERING & CHEMISTRY) -->
+    <section id="scienceSection" class="tab-panel hidden" role="tabpanel">
+      <!-- Science Tracks: Space & Gravity, Air & Friction, Density & Fluids, Chemistry & Matter -->
+      <div class="mode-selector" id="scienceTrackBar" role="radiogroup" aria-label="Science Track">
+        <button class="science-track-btn active" data-track="space">🌌 Space &amp; Gravity</button>
+        <button class="science-track-btn" data-track="air">💨 Air &amp; Friction</button>
+        <button class="science-track-btn" data-track="density">🌊 Density &amp; Viscosity</button>
+        <button class="science-track-btn" data-track="chemistry">⚗️ Chemistry &amp; Matter</button>
+      </div>
+
+      <!-- Sequential Slide Navigation Toolbar for Science -->
+      <div class="slide-nav-toolbar science-nav-toolbar" aria-label="Science Slide Navigation">
+        <button id="prevScienceSlideBtn" class="slide-nav-btn" title="Previous Slide (or Left Arrow)">← Prev</button>
+        <div class="slide-progress-info">
+          <span class="slide-counter-badge" id="scienceSlideIndicator">Slide 1 of 4</span>
+          <div class="slide-dots" id="scienceSlideDots"></div>
+        </div>
+        <button id="nextScienceSlideBtn" class="slide-nav-btn" title="Next Slide (or Right Arrow)">Next →</button>
+      </div>
+
+      <!-- Main Science Pop-Up Card -->
+      <main class="card-stage">
+        <div class="popup-card science-card" id="scienceCard">
+          <div class="card-badge science-badge" id="scienceBadge">Slide 1 of 4 • Space &amp; Gravity</div>
+
+          <!-- Science Question Header -->
+          <div class="riddle-header">
+            <h2 class="riddle-question" id="scienceQuestion">Science Question Goes Here</h2>
+          </div>
+
+          <!-- Graphic Viewport (SVGs and Interactive Diagrams) -->
+          <div class="riddle-viewport science-viewport" id="scienceViewport">
+            <!-- Diagram injected here -->
+          </div>
+
+          <!-- Optional Science Input Zone -->
+          <div class="interactive-input-zone" id="scienceInputZone">
+            <input 
+              type="text" 
+              id="scienceAnswerInput" 
+              placeholder="What do you think happens? (or hit Space)" 
+              autocomplete="off"
+            />
+            <div class="input-feedback" id="scienceInputFeedback"></div>
+          </div>
+
+          <!-- Solution & Science Principle Explanation Display -->
+          <div class="riddle-solution-box science-solution-box hidden" id="scienceSolutionBox">
+            <div class="riddle-answer-title" id="scienceAnswerTitle">Answer</div>
+            <div class="riddle-explanation" id="scienceExplanation">Science Explanation</div>
+          </div>
+
+          <!-- Spacebar Action Button -->
+          <div class="spacebar-bar-wrapper">
+            <button id="scienceActionBtn" class="spacebar-btn science-action-btn">
+              <span class="key-cap">SPACE</span>
+              <span class="action-text" id="scienceActionText">Reveal Science Secret</span>
+            </button>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <!-- Bottom Helper Instructions -->
+    <footer class="quiz-footer">
+      <div class="footer-tip">
+        <span class="key-hint">⌨️ Tap <strong>Space Bar</strong> to reveal answer &amp; advance to next problem!</span>
+      </div>
+      <div class="stats-bar">
+        <span>Completed: <strong id="totalCompleted">0</strong></span>
+        <button id="resetStatsBtn" class="link-btn">Reset Score</button>
+      </div>
+    </footer>
+  </div>
+
+  <canvas id="confettiCanvas"></canvas>
+  <script src="app.js"></script>
+</body>
+</html>

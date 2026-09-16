@@ -1,0 +1,8 @@
+# Antigravity configs
+.gemini/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
