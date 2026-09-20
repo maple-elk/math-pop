@@ -29,7 +29,7 @@
   };
 
   // Global App State
-  let activeTab = 'grade2'; // 'kindergarten' | 'grade2' | 'grade3' | 'grade4' | 'grade5' | 'riddles' | 'science'
+  let activeTab = 'grade2'; // 'kindergarten' | 'grade1' | 'grade2' | 'grade3' | 'grade4' | 'grade5' | 'riddles' | 'science'
   let streak = parseInt(SafeStorage.getItem('mathpop_streak') || '0', 10);
   let totalCompleted = parseInt(SafeStorage.getItem('mathpop_total') || '0', 10);
   let soundEnabled = SafeStorage.getItem('mathpop_sound') !== 'false';
@@ -47,6 +47,7 @@
 
   // Active sub-topic per math grade
   const gradeTopicState = {
+    grade1: 'g1_add10',
     grade2: 'g2_add',
     grade3: 'g3_mult',
     grade4: 'g4_mult',
@@ -303,6 +304,16 @@
   // GRADE DEFINITIONS & TOPIC CONFIGURATIONS
   // ========================================================
   const GRADE_TOPICS = {
+    grade1: [
+      { id: 'g1_add10', label: '➕ Addition (to 10)' },
+      { id: 'g1_sub10', label: '➖ Subtraction (to 10)' },
+      { id: 'g1_make10', label: '🎯 Making 10' },
+      { id: 'g1_add20', label: '➕ Addition (to 20)' },
+      { id: 'g1_sub20', label: '➖ Subtraction (to 20)' },
+      { id: 'g1_tens', label: '🔟 Tens & Ones' },
+      { id: 'g1_mix', label: '🔀 Mixed 1st' },
+      { id: 'g1_unusual', label: '🦄 Unusual Math' }
+    ],
     grade2: [
       { id: 'g2_add', label: '➕ Addition (to 20)' },
       { id: 'g2_sub', label: '➖ Subtraction (to 20)' },
@@ -360,8 +371,82 @@
   }
 
   // ========================================================
-  // UNUSUAL MATH GENERATORS (GRADES 2 - 5)
+  // UNUSUAL MATH GENERATORS (GRADES 1 - 5)
   // ========================================================
+  function generateG1Unusual() {
+    const kind = getRandomInt(1, 4);
+    if (kind === 1) {
+      const tensJumps = [
+        { a: 10, b: 10, op: '+', ans: 20, exp: '10 fingers + 10 toes = 20! Two tens make twenty!' },
+        { a: 20, b: 20, op: '+', ans: 40, exp: 'Double twenty: 20 + 20 = 40!' },
+        { a: 50, b: 50, op: '+', ans: 100, exp: 'Think of coins: two 50¢ pieces make ONE HUNDRED cents (100)!' },
+        { a: 20, b: 10, op: '-', ans: 10, exp: '20 minus 10 leaves exactly one ten (10)!' },
+        { a: 30, b: 10, op: '-', ans: 20, exp: 'Count down by tens: 30, 20!' }
+      ];
+      const p = tensJumps[getRandomInt(0, tensJumps.length - 1)];
+      return {
+        badge: '1st Grade • 🦄 Unusual Math!',
+        leftHtml: `<span class="num">${p.a}</span><span class="op">${p.op}</span><span class="num">${p.b}</span><span class="equals">=</span>`,
+        answerHtml: `${p.ans}`,
+        answerRaw: `${p.ans}`,
+        hasVisualDots: false,
+        stepExplanation: p.exp
+      };
+    } else if (kind === 2) {
+      const leaps = [
+        { a: 99, b: 1, op: '+', ans: 100, exp: 'Add 1 to 99 and you hit the giant ONE HUNDRED (100)!' },
+        { a: 1, b: 99, op: '+', ans: 100, exp: '1 + 99 leaps straight to 100!' },
+        { a: 100, b: 1, op: '-', ans: 99, exp: 'One step back from 100 lands on 99!' }
+      ];
+      const p = leaps[getRandomInt(0, leaps.length - 1)];
+      return {
+        badge: '1st Grade • 🦄 Unusual Math!',
+        leftHtml: `<span class="num">${p.a}</span><span class="op">${p.op}</span><span class="num">${p.b}</span><span class="equals">=</span>`,
+        answerHtml: `${p.ans}`,
+        answerRaw: `${p.ans}`,
+        hasVisualDots: false,
+        stepExplanation: p.exp
+      };
+    } else if (kind === 3) {
+      const zeroTricks = [
+        { a: 100, b: 0, ans: 100, exp: 'Adding 0 never changes the number, even for ONE HUNDRED!' },
+        { a: 1000, b: 0, ans: 1000, exp: 'Adding 0 leaves one thousand (1,000) unchanged!' },
+        { a: 10, b: 10, ans: 0, exp: 'If you have 10 balloons and pop all 10, you have ZERO (0) balloons left!' },
+        { a: 20, b: 20, ans: 0, exp: 'Subtracting a number from itself always leaves 0!' }
+      ];
+      const p = zeroTricks[getRandomInt(0, zeroTricks.length - 1)];
+      const op = p.ans === 0 ? '-' : '+';
+      return {
+        badge: '1st Grade • 🦄 Unusual Math!',
+        leftHtml: `<span class="num">${p.a.toLocaleString()}</span><span class="op">${op}</span><span class="num">${p.b.toLocaleString()}</span><span class="equals">=</span>`,
+        answerHtml: `${p.ans.toLocaleString()}`,
+        answerRaw: `${p.ans}`,
+        hasVisualDots: false,
+        stepExplanation: p.exp
+      };
+    } else {
+      const twins = [
+        { a: 5, ans: 10, exp: 'Two high fives make ten (10)!' },
+        { a: 6, ans: 12, exp: 'Double sixes make a dozen (12)!' },
+        { a: 7, ans: 14, exp: 'Double lucky sevens make 14!' },
+        { a: 8, ans: 16, exp: 'Double eights make 16!' },
+        { a: 9, ans: 18, exp: 'Double nines make 18!' }
+      ];
+      const p = twins[getRandomInt(0, twins.length - 1)];
+      return {
+        badge: '1st Grade • 🦄 Unusual Math!',
+        leftHtml: `<span class="num">${p.a}</span><span class="op">+</span><span class="num">${p.a}</span><span class="equals">=</span>`,
+        answerHtml: `${p.ans}`,
+        answerRaw: `${p.ans}`,
+        hasVisualDots: true,
+        dotsA: p.a,
+        dotsB: p.a,
+        dotsOp: '+',
+        stepExplanation: `Twin Double: ${p.a} + ${p.a} = ${p.ans}! ${p.exp}`
+      };
+    }
+  }
+
   function generateG2Unusual() {
     const kind = getRandomInt(1, 4);
     if (kind === 1) {
@@ -591,10 +676,144 @@
   }
 
   // ========================================================
-  // MATH PROBLEM GENERATOR (GRADES 2 - 5)
+  // MATH PROBLEM GENERATOR (GRADES 1 - 5)
   // ========================================================
   function generateMathProblem() {
-    const topic = gradeTopicState[activeTab] || 'g2_add';
+    const topic = gradeTopicState[activeTab] || (activeTab === 'grade1' ? 'g1_add10' : 'g2_add');
+
+    if (topic.startsWith('g1_')) {
+      let subMode = topic;
+      if (subMode === 'g1_mix') {
+        const mixTopics = ['g1_add10', 'g1_sub10', 'g1_make10', 'g1_add20', 'g1_sub20', 'g1_tens', 'g1_unusual'];
+        subMode = Math.random() < 0.15 ? 'g1_unusual' : mixTopics[getRandomInt(0, mixTopics.length - 2)];
+      }
+
+      if (subMode === 'g1_unusual') {
+        return generateG1Unusual();
+      }
+
+      if (subMode === 'g1_add10') {
+        const sum = getRandomInt(2, 10);
+        const a = getRandomInt(1, sum - 1);
+        const b = sum - a;
+        return {
+          badge: '1st Grade • Addition (to 10)',
+          leftHtml: `<span class="num">${a}</span><span class="op">+</span><span class="num">${b}</span><span class="equals">=</span>`,
+          answerHtml: `${sum}`,
+          answerRaw: `${sum}`,
+          hasVisualDots: true,
+          dotsA: a,
+          dotsB: b,
+          dotsOp: '+',
+          stepExplanation: `${a} + ${b} = ${sum}!`
+        };
+      } else if (subMode === 'g1_sub10') {
+        const a = getRandomInt(2, 10);
+        const b = getRandomInt(1, a - 1);
+        const ans = a - b;
+        return {
+          badge: '1st Grade • Subtraction (to 10)',
+          leftHtml: `<span class="num">${a}</span><span class="op">-</span><span class="num">${b}</span><span class="equals">=</span>`,
+          answerHtml: `${ans}`,
+          answerRaw: `${ans}`,
+          hasVisualDots: true,
+          dotsA: a,
+          dotsB: b,
+          dotsOp: '-',
+          stepExplanation: `${a} minus ${b} leaves ${ans}!`
+        };
+      } else if (subMode === 'g1_make10') {
+        const a = getRandomInt(1, 9);
+        const partner = 10 - a;
+        const askAsSubtraction = Math.random() < 0.4;
+        if (askAsSubtraction) {
+          return {
+            badge: '1st Grade • Making 10',
+            leftHtml: `<span class="num">10</span><span class="op">-</span><span class="num">${a}</span><span class="equals">=</span>`,
+            answerHtml: `${partner}`,
+            answerRaw: `${partner}`,
+            hasVisualDots: true,
+            dotsA: 10,
+            dotsB: a,
+            dotsOp: '-',
+            stepExplanation: `10 minus ${a} leaves ${partner}! (${a} + ${partner} = 10)`
+          };
+        } else {
+          return {
+            badge: '1st Grade • Making 10',
+            leftHtml: `<span class="num">${a}</span><span class="op">+</span><span class="num">${partner}</span><span class="equals">=</span>`,
+            answerHtml: `10`,
+            answerRaw: `10`,
+            hasVisualDots: true,
+            dotsA: a,
+            dotsB: partner,
+            dotsOp: '+',
+            stepExplanation: `${a} and ${partner} are friends of 10! ${a} + ${partner} = 10!`
+          };
+        }
+      } else if (subMode === 'g1_add20') {
+        const sum = getRandomInt(11, 20);
+        const a = getRandomInt(2, sum - 2);
+        const b = sum - a;
+        return {
+          badge: '1st Grade • Addition (to 20)',
+          leftHtml: `<span class="num">${a}</span><span class="op">+</span><span class="num">${b}</span><span class="equals">=</span>`,
+          answerHtml: `${sum}`,
+          answerRaw: `${sum}`,
+          hasVisualDots: true,
+          dotsA: a,
+          dotsB: b,
+          dotsOp: '+',
+          stepExplanation: `${a} + ${b} = ${sum}!`
+        };
+      } else if (subMode === 'g1_sub20') {
+        const a = getRandomInt(11, 20);
+        const b = getRandomInt(1, a - 1);
+        const ans = a - b;
+        return {
+          badge: '1st Grade • Subtraction (to 20)',
+          leftHtml: `<span class="num">${a}</span><span class="op">-</span><span class="num">${b}</span><span class="equals">=</span>`,
+          answerHtml: `${ans}`,
+          answerRaw: `${ans}`,
+          hasVisualDots: true,
+          dotsA: a,
+          dotsB: b,
+          dotsOp: '-',
+          stepExplanation: `${a} minus ${b} leaves ${ans}!`
+        };
+      } else {
+        const isAdd = Math.random() < 0.6;
+        if (isAdd) {
+          const ones = getRandomInt(1, 9);
+          const tens = Math.random() < 0.7 ? 10 : (getRandomInt(2, 4) * 10);
+          return {
+            badge: '1st Grade • Tens & Ones',
+            leftHtml: `<span class="num">${tens}</span><span class="op">+</span><span class="num">${ones}</span><span class="equals">=</span>`,
+            answerHtml: `${tens + ones}`,
+            answerRaw: `${tens + ones}`,
+            hasVisualDots: tens === 10,
+            dotsA: tens === 10 ? 10 : 0,
+            dotsB: tens === 10 ? ones : 0,
+            dotsOp: '+',
+            stepExplanation: `${tens} (tens) + ${ones} (ones) = ${tens + ones}!`
+          };
+        } else {
+          const ones = getRandomInt(1, 9);
+          const total = 10 + ones;
+          return {
+            badge: '1st Grade • Tens & Ones',
+            leftHtml: `<span class="num">${total}</span><span class="op">-</span><span class="num">${ones}</span><span class="equals">=</span>`,
+            answerHtml: `10`,
+            answerRaw: `10`,
+            hasVisualDots: true,
+            dotsA: total,
+            dotsB: ones,
+            dotsOp: '-',
+            stepExplanation: `Take away the ${ones} ones to leave 1 whole ten (10)!`
+          };
+        }
+      }
+    }
 
     if (topic.startsWith('g2_')) {
       let subMode = topic;
@@ -1099,19 +1318,32 @@
 
     if (currentMathProblem.hasVisualDots) {
       visualizerEl.style.display = 'flex';
-      dotsAEl.innerHTML = '';
-      dotsBEl.innerHTML = '';
-      visualizerOpEl.textContent = currentMathProblem.dotsOp;
+      let curDotsA = document.getElementById('dotsA');
+      let curDotsB = document.getElementById('dotsB');
+      let curOp = document.getElementById('visualizerOp');
+      if (!curDotsA || !curDotsB || !curOp) {
+        visualizerEl.innerHTML = `
+          <div class="dots-group" id="dotsA"></div>
+          <div class="visualizer-op" id="visualizerOp">${currentMathProblem.dotsOp}</div>
+          <div class="dots-group" id="dotsB"></div>
+        `;
+        curDotsA = document.getElementById('dotsA');
+        curDotsB = document.getElementById('dotsB');
+        curOp = document.getElementById('visualizerOp');
+      }
+      curDotsA.innerHTML = '';
+      curDotsB.innerHTML = '';
+      curOp.textContent = currentMathProblem.dotsOp;
 
       for (let i = 0; i < currentMathProblem.dotsA; i++) {
         const dot = document.createElement('div');
         dot.className = 'dot dot-blue';
-        dotsAEl.appendChild(dot);
+        curDotsA.appendChild(dot);
       }
       for (let i = 0; i < currentMathProblem.dotsB; i++) {
         const dot = document.createElement('div');
         dot.className = 'dot dot-orange';
-        dotsBEl.appendChild(dot);
+        curDotsB.appendChild(dot);
       }
     } else if (currentMathProblem.customVisualHtml) {
       visualizerEl.style.display = 'flex';
@@ -4895,6 +5127,7 @@
             bestStreak: legacyStreak,
             categories: {
               kindergarten: 0,
+              grade1: 0,
               grade2: legacyTotal > 0 ? legacyTotal : 0,
               grade3: 0,
               grade4: 0,
@@ -5019,6 +5252,8 @@
       switch (t) {
         case 'kindergarten':
           return '🌱 Kindergarten';
+        case 'grade1':
+          return '1st Grade Math';
         case 'grade2':
           return '2nd Grade Math';
         case 'grade3':
@@ -5102,6 +5337,7 @@
           bestStreak: 0,
           categories: {
             kindergarten: 0,
+            grade1: 0,
             grade2: 0,
             grade3: 0,
             grade4: 0,
@@ -5148,6 +5384,7 @@
       profile.stats.bestStreak = 0;
       profile.stats.categories = {
         kindergarten: 0,
+        grade1: 0,
         grade2: 0,
         grade3: 0,
         grade4: 0,
@@ -5265,6 +5502,7 @@
     containerEl.innerHTML = '';
     const categoryLabels = [
       { key: 'kindergarten', label: '🌱 Kindergarten' },
+      { key: 'grade1', label: '1️⃣ 1st Grade' },
       { key: 'grade2', label: '2️⃣ 2nd Grade' },
       { key: 'grade3', label: '3️⃣ 3rd Grade' },
       { key: 'grade4', label: '4️⃣ 4th Grade' },

@@ -1,6 +1,6 @@
 # 🎈 Math Pop! - Elementary Math, Brain Teasers & Science Lab
 
-A fun, interactive, distraction-free educational web application designed for elementary students (Grades 2–5). Features single-key **Spacebar** progression to test mental math speed, solve curated spatial/logic riddles, and explore intuitive physics, engineering, and chemistry principles.
+A fun, interactive, distraction-free educational web application designed for elementary students (Grades 1–5). Features single-key **Spacebar** progression to test mental math speed, solve curated spatial/logic riddles, and explore intuitive physics, engineering, and chemistry principles.
 
 🌐 **Live Demo on GitHub Pages**: [https://maple-elk.github.io/math-pop/](https://maple-elk.github.io/math-pop/)
 
@@ -44,7 +44,8 @@ Designed for rapid, frictionless learning:
 - **🧩 Shape & Logic Puzzles (12 Slides)**: Repeating color patterns (Red/Blue), shape sequences (Triangle/Square), odd-one-out categories (Fruit vs. Animals, Vehicles vs. Lion), butterfly silhouette shadow matching, size ordering (Smallest to Biggest), full vs. empty juice cups, matching pairs (Shoe & Sock), missing puzzle pieces, and animal homes (Honeybee in Beehive).
 - **🔊 Read-to-Me Voice**: Native browser text-to-speech button (`🔊 Listen`) so young learners and pre-readers can hear questions and explanations read aloud.
 
-### 2. 📚 Elementary Math (Grades 2 – 5)
+### 2. 📚 Elementary Math (Grades 1 – 5)
+- **1st Grade**: Addition (within 10 and 20), Subtraction (within 10 and 20), Making 10 number bonds, Tens & Ones place value, and ten-frame visual dot counters.
 - **2nd Grade**: Addition (to 20), Subtraction (to 20), Mixed mode, Challenge (to 100), plus visual ten-frame dot counters.
 - **3rd Grade**: Times Tables (up to $10 \times 10$), Division Facts, 3-Digit Addition & Subtraction, Perimeter & Area basics.
 - **4th Grade**: Multi-Digit Multiplication, Long Division Facts, Mixed Operations, Fraction Equivalence.
