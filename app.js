@@ -3,10 +3,21 @@
   'use strict';
 
   // Global App State
-  let activeTab = 'grade2'; // 'grade2' | 'grade3' | 'grade4' | 'grade5' | 'riddles' | 'science'
+  let activeTab = 'grade2'; // 'kindergarten' | 'grade2' | 'grade3' | 'grade4' | 'grade5' | 'riddles' | 'science'
   let streak = parseInt(localStorage.getItem('mathpop_streak') || '0', 10);
   let totalCompleted = parseInt(localStorage.getItem('mathpop_total') || '0', 10);
   let soundEnabled = localStorage.getItem('mathpop_sound') !== 'false';
+
+  // Kindergarten State
+  let activeKindergartenTrack = 'math'; // 'math' | 'questions' | 'riddles' | 'puzzles'
+  const trackKindergartenIndices = {
+    math: 0,
+    questions: 0,
+    riddles: 0,
+    puzzles: 0
+  };
+  let currentKindergartenSlide = null;
+  let kindergartenState = 'QUESTION'; // 'QUESTION' | 'SOLUTION'
 
   // Active sub-topic per math grade
   const gradeTopicState = {
@@ -36,8 +47,57 @@
   const soundToggleBtn = document.getElementById('soundToggle');
   const resetStatsBtn = document.getElementById('resetStatsBtn');
   const tabButtons = document.querySelectorAll('.app-tab');
+  const kindergartenSection = document.getElementById('kindergartenSection');
   const mathSection = document.getElementById('mathSection');
   const riddlesSection = document.getElementById('riddlesSection');
+
+  // --- Profile DOM Elements ---
+  const profileBtn = document.getElementById('profileBtn');
+  const profileAvatarEl = document.getElementById('profileAvatar');
+  const profileNameEl = document.getElementById('profileName');
+  const profileModal = document.getElementById('profileModal');
+  const closeProfileModalBtn = document.getElementById('closeProfileModalBtn');
+  const modalActiveAvatar = document.getElementById('modalActiveAvatar');
+  const modalActiveName = document.getElementById('modalActiveName');
+  const editProfileBtn = document.getElementById('editProfileBtn');
+  const editPlayerForm = document.getElementById('editPlayerForm');
+  const editPlayerNameInput = document.getElementById('editPlayerNameInput');
+  const cancelEditPlayerBtn = document.getElementById('cancelEditPlayerBtn');
+  const editAvatarPicker = document.getElementById('editAvatarPicker');
+  const modalTotalCompleted = document.getElementById('modalTotalCompleted');
+  const modalCurrentStreak = document.getElementById('modalCurrentStreak');
+  const modalBestStreak = document.getElementById('modalBestStreak');
+  const categoryBreakdownGrid = document.getElementById('categoryBreakdownGrid');
+  const toggleNewPlayerBtn = document.getElementById('toggleNewPlayerBtn');
+  const newPlayerForm = document.getElementById('newPlayerForm');
+  const newPlayerNameInput = document.getElementById('newPlayerNameInput');
+  const cancelNewPlayerBtn = document.getElementById('cancelNewPlayerBtn');
+  const newAvatarPicker = document.getElementById('newAvatarPicker');
+  const profileList = document.getElementById('profileList');
+  const resetProfileStatsBtn = document.getElementById('resetProfileStatsBtn');
+  const deleteProfileBtn = document.getElementById('deleteProfileBtn');
+  const exportProfilesBtn = document.getElementById('exportProfilesBtn');
+  const importProfilesBtn = document.getElementById('importProfilesBtn');
+  const importFileInput = document.getElementById('importFileInput');
+
+  // Kindergarten DOM Elements
+  const kindergartenCardEl = document.getElementById('kindergartenCard');
+  const kindergartenBadgeEl = document.getElementById('kindergartenBadge');
+  const kindergartenQuestionEl = document.getElementById('kindergartenQuestion');
+  const kindergartenViewportEl = document.getElementById('kindergartenViewport');
+  const kindergartenSolutionBoxEl = document.getElementById('kindergartenSolutionBox');
+  const kindergartenAnswerTitleEl = document.getElementById('kindergartenAnswerTitle');
+  const kindergartenExplanationEl = document.getElementById('kindergartenExplanation');
+  const kindergartenActionBtn = document.getElementById('kindergartenActionBtn');
+  const kindergartenActionText = document.getElementById('kindergartenActionText');
+  const kindergartenAnswerInput = document.getElementById('kindergartenAnswerInput');
+  const kindergartenInputFeedback = document.getElementById('kindergartenInputFeedback');
+  const kindergartenTrackButtons = document.querySelectorAll('.kindergarten-track-btn');
+  const prevKindergartenSlideBtn = document.getElementById('prevKindergartenSlideBtn');
+  const nextKindergartenSlideBtn = document.getElementById('nextKindergartenSlideBtn');
+  const kindergartenSlideIndicator = document.getElementById('kindergartenSlideIndicator');
+  const kindergartenSlideDots = document.getElementById('kindergartenSlideDots');
+  const kindergartenSpeakBtn = document.getElementById('kindergartenSpeakBtn');
 
   // Math DOM Elements
   const topicBar = document.getElementById('topicBar');
@@ -1070,7 +1130,7 @@
     } else {
       streak += 1;
     }
-    totalCompleted += 1;
+    ProfileManager.recordCompletion(activeTab, streak);
     saveStats();
     updateStatsUI();
 
@@ -2218,7 +2278,7 @@
     } else {
       streak += 1;
     }
-    totalCompleted += 1;
+    ProfileManager.recordCompletion('riddles', streak);
     saveStats();
     updateStatsUI();
 
@@ -2997,7 +3057,8 @@
     if (currentIdx < deck.length - 1) {
       showScienceSlide(currentIdx + 1);
     } else {
-      showScienceSlide(0); // Loop back
+      showScienceSlide(0);
+  showKindergartenSlide(0); // Loop back
     }
   }
 
@@ -3041,7 +3102,7 @@
     } else {
       streak += 1;
     }
-    totalCompleted += 1;
+    ProfileManager.recordCompletion('science', streak);
     saveStats();
     updateStatsUI();
 
@@ -3070,16 +3131,2167 @@
   }
 
   // ========================================================
+  // KINDERGARTEN (MATH, QUESTIONS, RIDDLES, PUZZLES)
+  // ========================================================
+
+  function speakKindergarten(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      utterance.pitch = 1.05;
+      if (kindergartenSpeakBtn) {
+        kindergartenSpeakBtn.classList.add('speaking');
+        utterance.onend = () => kindergartenSpeakBtn.classList.remove('speaking');
+        utterance.onerror = () => kindergartenSpeakBtn.classList.remove('speaking');
+      }
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn("Speech synthesis error:", e);
+    }
+  }
+
+  const KINDERGARTEN_SLIDES = {
+    // ----------------------------------------------------
+    // TRACK 1: 🔢 COUNTING & MATH (12 Slides)
+    // ----------------------------------------------------
+    math: [
+      // 1. Duck Pond Counting (5)
+      {
+        question: 'How many cute yellow ducklings are swimming in the pond? Count them!',
+        answerRaw: '5',
+        answersAccepted: ['5', 'five', '5 ducks', '5 ducklings', 'five ducklings'],
+        answerTitle: 'Answer: 5 Ducklings! 🦆',
+        explanation: 'Count along the pond: 1, 2, 3, 4, and 5 happy swimming ducks!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="20" width="440" height="160" rx="30" fill="#e0f2fe" stroke="#38bdf8" stroke-width="3"/>`;
+          svg += `<path d="M30,140 Q110,120 190,140 T350,140 T440,140" fill="none" stroke="#bae6fd" stroke-width="6"/>`;
+          svg += `<path d="M20,160 Q100,145 180,160 T360,160 T440,160" fill="none" stroke="#7dd3fc" stroke-width="4"/>`;
+          const ducks = [
+            { x: 70, y: 110, num: 1 },
+            { x: 150, y: 80, num: 2 },
+            { x: 230, y: 115, num: 3 },
+            { x: 310, y: 75, num: 4 },
+            { x: 390, y: 105, num: 5 }
+          ];
+          ducks.forEach(d => {
+            svg += `<text x="${d.x}" y="${d.y}" font-size="42" text-anchor="middle">🦆</text>`;
+            if (isRevealed) {
+              svg += `<circle cx="${d.x}" cy="${d.y - 38}" r="14" fill="#f59e0b" stroke="#fff" stroke-width="2"/>`;
+              svg += `<text x="${d.x}" y="${d.y - 33}" font-family="'Fredoka', sans-serif" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">${d.num}</text>`;
+            }
+          });
+          if (isRevealed) {
+            svg += `<rect x="160" y="148" width="140" height="28" rx="10" fill="#10b981"/>`;
+            svg += `<text x="230" y="167" font-family="'Fredoka', sans-serif" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">TOTAL = 5 DUCKS!</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 2. Apple Harvest Addition (3 + 2 = 5)
+      {
+        question: '3 red apples are on the tree. 2 fell into the basket! How many apples in all? (3 + 2 = ?)',
+        answerRaw: '5',
+        answersAccepted: ['5', 'five', '5 apples', 'five apples'],
+        answerTitle: 'Answer: 3 + 2 = 5 Apples! 🍎',
+        explanation: '3 apples on the branch plus 2 apples in the basket make 5 delicious apples altogether!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="150" width="440" height="40" rx="10" fill="#dcfce7"/>`;
+          // Tree foliage on left
+          svg += `<circle cx="140" cy="85" r="65" fill="#86efac" stroke="#22c55e" stroke-width="3"/>`;
+          svg += `<circle cx="110" cy="70" r="45" fill="#4ade80"/>`;
+          svg += `<circle cx="170" cy="75" r="45" fill="#4ade80"/>`;
+          // Trunk
+          svg += `<rect x="128" y="130" width="24" height="40" fill="#b45309" rx="4"/>`;
+          // 3 apples on tree
+          svg += `<text x="105" y="80" font-size="30" text-anchor="middle">🍎</text>`;
+          svg += `<text x="145" y="65" font-size="30" text-anchor="middle">🍎</text>`;
+          svg += `<text x="165" y="105" font-size="30" text-anchor="middle">🍎</text>`;
+          svg += `<rect x="90" y="115" width="80" height="22" rx="8" fill="#15803d"/>`;
+          svg += `<text x="130" y="130" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="#fff" text-anchor="middle">3 on tree</text>`;
+          // Plus sign
+          svg += `<text x="235" y="100" font-family="'Fredoka', sans-serif" font-size="32" font-weight="900" fill="#059669" text-anchor="middle">+</text>`;
+          // Basket on right with 2 apples
+          svg += `<rect x="290" y="105" width="100" height="45" rx="12" fill="#d97706" stroke="#b45309" stroke-width="2"/>`;
+          svg += `<text x="320" y="100" font-size="30" text-anchor="middle">🍎</text>`;
+          svg += `<text x="360" y="100" font-size="30" text-anchor="middle">🍎</text>`;
+          svg += `<rect x="300" y="125" width="80" height="20" rx="6" fill="#92400e"/>`;
+          svg += `<text x="340" y="139" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#fef3c7" text-anchor="middle">2 in basket</text>`;
+          if (isRevealed) {
+            svg += `<rect x="180" y="15" width="110" height="32" rx="10" fill="#10b981" stroke="#059669" stroke-width="2"/>`;
+            svg += `<text x="235" y="36" font-family="'Fredoka', sans-serif" font-size="15" font-weight="800" fill="#fff" text-anchor="middle">3 + 2 = 5! 🎉</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 3. Balloon Pop Subtraction (5 - 2 = 3)
+      {
+        question: 'You had 5 shiny balloons. POP! 2 popped! How many balloons are still floating? (5 - 2 = ?)',
+        answerRaw: '3',
+        answersAccepted: ['3', 'three', '3 balloons', 'three balloons'],
+        answerTitle: 'Answer: 5 - 2 = 3 Balloons! 🎈',
+        explanation: '5 balloons minus the 2 that popped leaves 3 colorful balloons floating high!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>`;
+          // 3 intact floating balloons
+          const intact = [
+            { x: 80, y: 70, color: '🎈', label: '1' },
+            { x: 155, y: 55, color: '🎈', label: '2' },
+            { x: 230, y: 75, color: '🎈', label: '3' }
+          ];
+          intact.forEach(b => {
+            svg += `<text x="${b.x}" y="${b.y}" font-size="44" text-anchor="middle">${b.color}</text>`;
+            svg += `<line x1="${b.x}" y1="${b.y + 12}" x2="${b.x - 5}" y2="155" stroke="#94a3b8" stroke-width="2" stroke-dasharray="3,2"/>`;
+            if (isRevealed) {
+              svg += `<circle cx="${b.x}" cy="${b.y - 36}" r="12" fill="#10b981"/>`;
+              svg += `<text x="${b.x}" y="${b.y - 32}" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="#fff" text-anchor="middle">${b.label}</text>`;
+            }
+          });
+          // 2 popped balloons
+          const popped = [{ x: 320, y: 75 }, { x: 390, y: 65 }];
+          popped.forEach(p => {
+            svg += `<text x="${p.x}" y="${p.y}" font-size="34" text-anchor="middle">💥</text>`;
+            svg += `<text x="${p.x}" y="${p.y + 24}" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="#ef4444" text-anchor="middle">POP!</text>`;
+            svg += `<line x1="${p.x}" y1="${p.y + 30}" x2="${p.x - 5}" y2="155" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,4"/>`;
+          });
+          // Hand holding strings
+          svg += `<text x="180" y="175" font-size="28" text-anchor="middle">✊</text>`;
+          if (isRevealed) {
+            svg += `<rect x="150" y="15" width="160" height="28" rx="8" fill="#3b82f6"/>`;
+            svg += `<text x="230" y="34" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">5 - 2 = 3 LEFT!</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 4. Ladybug Ten-Frame (6)
+      {
+        question: 'Count the ladybugs in this ten-frame! How many ladybugs are there?',
+        answerRaw: '6',
+        answersAccepted: ['6', 'six', '6 ladybugs', 'six ladybugs'],
+        answerTitle: 'Answer: 6 Ladybugs! 🐞',
+        explanation: 'The top row has a full 5 ladybugs, and the bottom row has 1. 5 + 1 = 6 ladybugs!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="50" y="25" width="360" height="145" rx="16" fill="#f0fdf4" stroke="#10b981" stroke-width="3"/>`;
+          // Grid 2 rows x 5 columns
+          const cellW = 68;
+          const cellH = 65;
+          const startX = 60;
+          const startY = 32;
+          for (let row = 0; row < 2; row++) {
+            for (let col = 0; col < 5; col++) {
+              const x = startX + col * cellW;
+              const y = startY + row * cellH;
+              svg += `<rect x="${x}" y="${y}" width="${cellW - 4}" height="${cellH - 4}" rx="8" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>`;
+              const index = row * 5 + col;
+              if (index < 6) {
+                svg += `<text x="${x + (cellW-4)/2}" y="${y + 42}" font-size="34" text-anchor="middle">🐞</text>`;
+                if (isRevealed) {
+                  svg += `<text x="${x + (cellW-4)/2}" y="${y + 55}" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#dc2626" text-anchor="middle">${index + 1}</text>`;
+                }
+              } else {
+                svg += `<circle cx="${x + (cellW-4)/2}" cy="${y + (cellH-4)/2}" r="10" fill="#f8fafc" stroke="#94a3b8" stroke-dasharray="3,3" stroke-width="1.5"/>`;
+              }
+            }
+          }
+          if (isRevealed) {
+            svg += `<rect x="150" y="170" width="160" height="24" rx="6" fill="#10b981"/>`;
+            svg += `<text x="230" y="186" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="#fff" text-anchor="middle">5 on top + 1 on bottom = 6!</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 5. Fishbowl Comparison (Who has MORE?)
+      {
+        question: 'Which bowl has MORE fish swimming inside: Bowl A or Bowl B?',
+        answerRaw: 'B',
+        answersAccepted: ['b', 'bowl b', 'fishbowl b', 'b has more', '2'],
+        answerTitle: 'Answer: Bowl B has MORE! 🐟',
+        explanation: 'Bowl A only has 2 fish, but Bowl B has 4 fish! 4 is greater than 2 (4 > 2)!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          // Table
+          svg += `<rect x="20" y="165" width="420" height="15" rx="6" fill="#d97706"/>`;
+          // Bowl A (2 fish)
+          svg += `<circle cx="130" cy="105" r="55" fill="#e0f2fe" stroke="#38bdf8" stroke-width="3"/>`;
+          svg += `<ellipse cx="130" cy="55" rx="35" ry="10" fill="#bae6fd" stroke="#38bdf8" stroke-width="2"/>`;
+          svg += `<text x="110" y="110" font-size="28" text-anchor="middle">🐠</text>`;
+          svg += `<text x="145" y="125" font-size="28" text-anchor="middle">🐠</text>`;
+          svg += `<rect x="95" y="145" width="70" height="22" rx="6" fill="#64748b"/>`;
+          svg += `<text x="130" y="160" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="#fff" text-anchor="middle">Bowl A: 2</text>`;
+
+          // Bowl B (4 fish)
+          const bowlBStroke = isRevealed ? '#10b981' : '#38bdf8';
+          const bowlBFill = isRevealed ? '#dcfce7' : '#e0f2fe';
+          svg += `<circle cx="330" cy="105" r="55" fill="${bowlBFill}" stroke="${bowlBStroke}" stroke-width="3"/>`;
+          svg += `<ellipse cx="330" cy="55" rx="35" ry="10" fill="#bae6fd" stroke="${bowlBStroke}" stroke-width="2"/>`;
+          svg += `<text x="310" y="95" font-size="26" text-anchor="middle">🐟</text>`;
+          svg += `<text x="350" y="100" font-size="26" text-anchor="middle">🐟</text>`;
+          svg += `<text x="315" y="130" font-size="26" text-anchor="middle">🐟</text>`;
+          svg += `<text x="345" y="135" font-size="26" text-anchor="middle">🐟</text>`;
+          svg += `<rect x="295" y="145" width="70" height="22" rx="6" fill="${isRevealed ? '#10b981' : '#64748b'}"/>`;
+          svg += `<text x="330" y="160" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="#fff" text-anchor="middle">Bowl B: 4</text>`;
+
+          if (isRevealed) {
+            svg += `<circle cx="330" cy="30" r="16" fill="#f59e0b"/>`;
+            svg += `<text x="330" y="36" font-size="16" text-anchor="middle">⭐</text>`;
+            svg += `<rect x="180" y="70" width="100" height="30" rx="8" fill="#10b981"/>`;
+            svg += `<text x="230" y="90" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="#fff" text-anchor="middle">4 > 2 (MORE!)</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 6. Twinkling Stars (7)
+      {
+        question: 'Count the twinkling stars shining in the night sky! How many do you see?',
+        answerRaw: '7',
+        answersAccepted: ['7', 'seven', '7 stars', 'seven stars'],
+        answerTitle: 'Answer: 7 Twinkling Stars! ⭐',
+        explanation: 'Point to each bright star: 1, 2, 3, 4, 5, 6, 7! Seven golden stars!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="24" fill="#0f172a" stroke="#334155" stroke-width="2"/>`;
+          // Moon
+          svg += `<text x="60" y="65" font-size="36" text-anchor="middle">🌙</text>`;
+          const stars = [
+            { x: 130, y: 70, num: 1 },
+            { x: 190, y: 130, num: 2 },
+            { x: 230, y: 60, num: 3 },
+            { x: 280, y: 120, num: 4 },
+            { x: 330, y: 65, num: 5 },
+            { x: 385, y: 130, num: 6 },
+            { x: 410, y: 60, num: 7 }
+          ];
+          stars.forEach(s => {
+            svg += `<text x="${s.x}" y="${s.y}" font-size="34" text-anchor="middle">⭐</text>`;
+            if (isRevealed) {
+              svg += `<circle cx="${s.x}" cy="${s.y - 28}" r="11" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>`;
+              svg += `<text x="${s.x}" y="${s.y - 24}" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">${s.num}</text>`;
+            }
+          });
+          if (isRevealed) {
+            svg += `<rect x="160" y="150" width="140" height="26" rx="8" fill="#f59e0b"/>`;
+            svg += `<text x="230" y="168" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">7 BRIGHT STARS!</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 7. Cookie Jar Addition (4 + 1 = 5)
+      {
+        question: 'There are 4 cookies inside the jar. Bunny drops in 1 more cookie! How many cookies now? (4 + 1 = ?)',
+        answerRaw: '5',
+        answersAccepted: ['5', 'five', '5 cookies', 'five cookies'],
+        answerTitle: 'Answer: 4 + 1 = 5 Cookies! 🍪',
+        explanation: '4 chocolate cookies in the jar plus 1 more cookie makes 5 sweet cookies in all!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="165" width="440" height="20" rx="4" fill="#fed7aa"/>`;
+          // Glass jar
+          svg += `<rect x="160" y="45" width="140" height="120" rx="20" fill="rgba(224, 242, 254, 0.4)" stroke="#38bdf8" stroke-width="3"/>`;
+          svg += `<rect x="185" y="30" width="90" height="18" rx="6" fill="#f97316"/>`;
+          // 4 cookies inside
+          svg += `<text x="195" y="95" font-size="30" text-anchor="middle">🍪</text>`;
+          svg += `<text x="260" y="95" font-size="30" text-anchor="middle">🍪</text>`;
+          svg += `<text x="200" y="140" font-size="30" text-anchor="middle">🍪</text>`;
+          svg += `<text x="260" y="140" font-size="30" text-anchor="middle">🍪</text>`;
+          // 1 cookie entering from top
+          svg += `<text x="230" y="24" font-size="28" text-anchor="middle">🍪</text>`;
+          svg += `<line x1="230" y1="28" x2="230" y2="50" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3,2"/>`;
+          // Bunny on left
+          svg += `<text x="90" y="120" font-size="50" text-anchor="middle">🐰</text>`;
+          if (isRevealed) {
+            svg += `<rect x="330" y="80" width="105" height="48" rx="12" fill="#10b981"/>`;
+            svg += `<text x="382" y="102" font-family="'Fredoka', sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">4 IN + 1 MORE</text>`;
+            svg += `<text x="382" y="120" font-family="'Fredoka', sans-serif" font-size="16" font-weight="900" fill="#fef08a" text-anchor="middle">= 5 COOKIES!</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 8. Frogs on a Log Subtraction (4 - 1 = 3)
+      {
+        question: '4 green frogs sat on a log. 1 hopped into the pond: SPLASH! How many frogs are still on the log? (4 - 1 = ?)',
+        answerRaw: '3',
+        answersAccepted: ['3', 'three', '3 frogs', 'three frogs'],
+        answerTitle: 'Answer: 4 - 1 = 3 Frogs! 🐸',
+        explanation: '4 frogs on the log minus 1 frog jumping into the water leaves 3 frogs on the log!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="80" width="440" height="105" rx="14" fill="#bae6fd"/>`;
+          // Wooden log
+          svg += `<rect x="40" y="115" width="280" height="35" rx="12" fill="#78350f" stroke="#451a03" stroke-width="2"/>`;
+          // 3 sitting frogs
+          const sitting = [{ x: 80, num: 1 }, { x: 150, num: 2 }, { x: 220, num: 3 }];
+          sitting.forEach(f => {
+            svg += `<text x="${f.x}" y="${110}" font-size="34" text-anchor="middle">🐸</text>`;
+            if (isRevealed) {
+              svg += `<circle cx="${f.x}" cy="70" r="10" fill="#10b981"/>`;
+              svg += `<text x="${f.x}" y="74" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">${f.num}</text>`;
+            }
+          });
+          // 1 jumping frog
+          svg += `<path d="M260,110 Q320,50 360,130" fill="none" stroke="#0284c7" stroke-width="3" stroke-dasharray="4,3"/>`;
+          svg += `<text x="360" y="125" font-size="32" text-anchor="middle">🐸</text>`;
+          svg += `<text x="360" y="160" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="#0369a1" text-anchor="middle">SPLASH! 💦</text>`;
+          if (isRevealed) {
+            svg += `<rect x="140" y="20" width="160" height="28" rx="8" fill="#15803d"/>`;
+            svg += `<text x="220" y="39" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">4 - 1 = 3 ON LOG!</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 9. High-Five Hands (5)
+      {
+        question: 'Give a high five! How many fingers (including the thumb) are on ONE hand? 🖐️',
+        answerRaw: '5',
+        answersAccepted: ['5', 'five', '5 fingers', 'five fingers'],
+        answerTitle: 'Answer: 5 Fingers! 🖐️',
+        explanation: 'Thumb, index, middle, ring, and pinky — that makes 5 fingers on one hand!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fdf2f8" stroke="#fbcfe8" stroke-width="2"/>`;
+          // Giant Hand SVG
+          svg += `<text x="230" y="125" font-size="80" text-anchor="middle">🖐️</text>`;
+          const tips = [
+            { x: 175, y: 70, n: 1 },
+            { x: 195, y: 35, n: 2 },
+            { x: 230, y: 25, n: 3 },
+            { x: 265, y: 38, n: 4 },
+            { x: 290, y: 75, n: 5 }
+          ];
+          if (isRevealed) {
+            tips.forEach(t => {
+              svg += `<circle cx="${t.x}" cy="${t.y}" r="12" fill="#ec4899" stroke="#fff" stroke-width="2"/>`;
+              svg += `<text x="${t.x}" y="${t.y + 4}" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="#fff" text-anchor="middle">${t.n}</text>`;
+            });
+            svg += `<rect x="160" y="150" width="140" height="28" rx="8" fill="#db2777"/>`;
+            svg += `<text x="230" y="169" font-family="'Fredoka', sans-serif" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">HIGH FIVE = 5!</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 10. Toy Cars (2 + 2 = 4)
+      {
+        question: '2 red cars and 2 blue cars line up on the track! How many cars in all? (2 + 2 = ?)',
+        answerRaw: '4',
+        answersAccepted: ['4', 'four', '4 cars', 'four cars'],
+        answerTitle: 'Answer: 2 + 2 = 4 Cars! 🚗',
+        explanation: 'Two red cars plus two blue cars equal 4 speedy cars ready to race!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="20" y="40" width="420" height="120" rx="18" fill="#334155"/>`;
+          svg += `<line x1="20" y1="100" x2="440" y2="100" stroke="#facc15" stroke-width="4" stroke-dasharray="14,10"/>`;
+          // Finish line
+          svg += `<line x1="400" y1="40" x2="400" y2="160" stroke="#fff" stroke-width="6" stroke-dasharray="10,10"/>`;
+          // 2 red cars
+          svg += `<text x="90" y="85" font-size="40" text-anchor="middle">🚗</text>`;
+          svg += `<text x="180" y="85" font-size="40" text-anchor="middle">🚗</text>`;
+          // 2 blue cars
+          svg += `<text x="270" y="145" font-size="40" text-anchor="middle">🚙</text>`;
+          svg += `<text x="350" y="145" font-size="40" text-anchor="middle">🚙</text>`;
+          if (isRevealed) {
+            svg += `<rect x="150" y="10" width="160" height="30" rx="8" fill="#10b981"/>`;
+            svg += `<text x="230" y="30" font-family="'Fredoka', sans-serif" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">2 + 2 = 4 CARS! 🏁</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 11. Triangle Straight Sides (3)
+      {
+        question: 'How many straight sides does a TRIANGLE have? Count around the shape! ▲',
+        answerRaw: '3',
+        answersAccepted: ['3', 'three', '3 sides', 'three sides'],
+        answerTitle: 'Answer: 3 Straight Sides! 📐',
+        explanation: 'A triangle always has 3 straight sides and 3 pointy corners!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fefce8" stroke="#fef08a" stroke-width="2"/>`;
+          // Big Triangle
+          svg += `<polygon points="230,30 340,160 120,160" fill="#fef08a" stroke="#eab308" stroke-width="6" stroke-linejoin="round"/>`;
+          if (isRevealed) {
+            // Side 1 (left)
+            svg += `<circle cx="165" cy="95" r="14" fill="#3b82f6"/>`;
+            svg += `<text x="165" y="100" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">1</text>`;
+            // Side 2 (bottom)
+            svg += `<circle cx="230" cy="175" r="14" fill="#3b82f6"/>`;
+            svg += `<text x="230" y="180" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">2</text>`;
+            // Side 3 (right)
+            svg += `<circle cx="295" cy="95" r="14" fill="#3b82f6"/>`;
+            svg += `<text x="295" y="100" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">3</text>`;
+            svg += `<text x="230" y="125" font-family="'Fredoka', sans-serif" font-size="18" font-weight="900" fill="#a16207" text-anchor="middle">TRIANGLE = 3!</text>`;
+          } else {
+            svg += `<text x="230" y="120" font-size="36" text-anchor="middle">❓</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 12. Making 10 Bond (7 + ? = 10)
+      {
+        question: 'There are 7 blue dots in this 10-frame. How many MORE dots do we need to make 10?',
+        answerRaw: '3',
+        answersAccepted: ['3', 'three', '3 more', '3 dots'],
+        answerTitle: 'Answer: 3 More Dots! 🔵',
+        explanation: '7 blue dots plus 3 empty spaces equals a full ten-frame: 7 + 3 = 10!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="50" y="25" width="360" height="145" rx="16" fill="#f8fafc" stroke="#3b82f6" stroke-width="3"/>`;
+          const cellW = 68;
+          const cellH = 65;
+          const startX = 60;
+          const startY = 32;
+          for (let row = 0; row < 2; row++) {
+            for (let col = 0; col < 5; col++) {
+              const x = startX + col * cellW;
+              const y = startY + row * cellH;
+              svg += `<rect x="${x}" y="${y}" width="${cellW - 4}" height="${cellH - 4}" rx="8" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>`;
+              const index = row * 5 + col;
+              if (index < 7) {
+                svg += `<circle cx="${x + (cellW-4)/2}" cy="${y + (cellH-4)/2}" r="18" fill="#3b82f6"/>`;
+              } else {
+                if (isRevealed) {
+                  svg += `<circle cx="${x + (cellW-4)/2}" cy="${y + (cellH-4)/2}" r="18" fill="#f59e0b"/>`;
+                  svg += `<text x="${x + (cellW-4)/2}" y="${y + (cellH-4)/2 + 5}" font-family="'Fredoka', sans-serif" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">+1</text>`;
+                } else {
+                  svg += `<circle cx="${x + (cellW-4)/2}" cy="${y + (cellH-4)/2}" r="16" fill="none" stroke="#f59e0b" stroke-dasharray="4,3" stroke-width="2"/>`;
+                  svg += `<text x="${x + (cellW-4)/2}" y="${y + (cellH-4)/2 + 5}" font-family="'Fredoka', sans-serif" font-size="14" font-weight="800" fill="#f59e0b" text-anchor="middle">?</text>`;
+                }
+              }
+            }
+          }
+          if (isRevealed) {
+            svg += `<rect x="150" y="172" width="160" height="24" rx="6" fill="#10b981"/>`;
+            svg += `<text x="230" y="188" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="#fff" text-anchor="middle">7 + 3 = 10 (FULL!)</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      }
+    ],
+
+    // ----------------------------------------------------
+    // TRACK 2: ❓ CURIOUS QUESTIONS (12 Slides)
+    // ----------------------------------------------------
+    questions: [
+      // 1. Color Mixing Blue + Yellow = Green
+      {
+        question: 'What color paint do you get when you mix BLUE and YELLOW paint together? 🎨',
+        answerRaw: 'green',
+        answersAccepted: ['green', 'it makes green', 'bright green'],
+        answerTitle: 'Answer: Bright GREEN! 💚',
+        explanation: 'Blue and yellow are primary colors! When you swirl them together, they magically make GREEN!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>`;
+          // Blue splash
+          svg += `<circle cx="90" cy="100" r="42" fill="#3b82f6"/>`;
+          svg += `<text x="90" y="105" font-family="'Fredoka', sans-serif" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">BLUE</text>`;
+          // Plus
+          svg += `<text x="160" y="108" font-family="'Fredoka', sans-serif" font-size="28" font-weight="900" fill="#64748b" text-anchor="middle">+</text>`;
+          // Yellow splash
+          svg += `<circle cx="230" cy="100" r="42" fill="#facc15"/>`;
+          svg += `<text x="230" y="105" font-family="'Fredoka', sans-serif" font-size="14" font-weight="800" fill="#713f12" text-anchor="middle">YELLOW</text>`;
+          // Equals
+          svg += `<text x="300" y="108" font-family="'Fredoka', sans-serif" font-size="28" font-weight="900" fill="#64748b" text-anchor="middle">=</text>`;
+          // Result
+          if (isRevealed) {
+            svg += `<circle cx="370" cy="100" r="50" fill="#10b981" stroke="#059669" stroke-width="4"/>`;
+            svg += `<text x="370" y="98" font-family="'Fredoka', sans-serif" font-size="16" font-weight="900" fill="#fff" text-anchor="middle">GREEN!</text>`;
+            svg += `<text x="370" y="120" font-size="20" text-anchor="middle">✨</text>`;
+          } else {
+            svg += `<circle cx="370" cy="100" r="45" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="4,4" stroke-width="3"/>`;
+            svg += `<text x="370" y="110" font-size="34" text-anchor="middle">❓</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 2. Spider Legs (8)
+      {
+        question: 'How many walking legs does a spider have? Count them on both sides! 🕷️',
+        answerRaw: '8',
+        answersAccepted: ['8', 'eight', '8 legs', 'eight legs'],
+        answerTitle: 'Answer: 8 Legs! 🕷️',
+        explanation: 'Spiders have 4 legs on the left side and 4 legs on the right side. 4 + 4 = 8 walking legs!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#faf5ff" stroke="#e9d5ff" stroke-width="2"/>`;
+          // Spider Web lines
+          svg += `<line x1="230" y1="10" x2="230" y2="70" stroke="#cbd5e1" stroke-width="2"/>`;
+          svg += `<circle cx="230" cy="100" r="35" fill="#7e22ce"/>`;
+          svg += `<circle cx="230" cy="80" r="22" fill="#6b21a8"/>`;
+          // Eyes
+          svg += `<circle cx="222" cy="78" r="5" fill="#fff"/><circle cx="222" cy="78" r="2.5" fill="#000"/>`;
+          svg += `<circle cx="238" cy="78" r="5" fill="#fff"/><circle cx="238" cy="78" r="2.5" fill="#000"/>`;
+          // Left legs
+          const leftLegs = [{ y1: 85, y2: 65, n: 1 }, { y1: 95, y2: 85, n: 2 }, { y1: 105, y2: 110, n: 3 }, { y1: 115, y2: 135, n: 4 }];
+          leftLegs.forEach(l => {
+            svg += `<path d="M200,${l.y1} Q160,${l.y2-10} 130,${l.y2}" fill="none" stroke="#7e22ce" stroke-width="4" stroke-linecap="round"/>`;
+            if (isRevealed) {
+              svg += `<circle cx="118" cy="${l.y2}" r="9" fill="#10b981"/>`;
+              svg += `<text x="118" y="${l.y2 + 3}" font-family="'Fredoka', sans-serif" font-size="10" font-weight="800" fill="#fff" text-anchor="middle">${l.n}</text>`;
+            }
+          });
+          // Right legs
+          const rightLegs = [{ y1: 85, y2: 65, n: 5 }, { y1: 95, y2: 85, n: 6 }, { y1: 105, y2: 110, n: 7 }, { y1: 115, y2: 135, n: 8 }];
+          rightLegs.forEach(l => {
+            svg += `<path d="M260,${l.y1} Q300,${l.y2-10} 330,${l.y2}" fill="none" stroke="#7e22ce" stroke-width="4" stroke-linecap="round"/>`;
+            if (isRevealed) {
+              svg += `<circle cx="342" cy="${l.y2}" r="9" fill="#10b981"/>`;
+              svg += `<text x="342" y="${l.y2 + 3}" font-family="'Fredoka', sans-serif" font-size="10" font-weight="800" fill="#fff" text-anchor="middle">${l.n}</text>`;
+            }
+          });
+          if (isRevealed) {
+            svg += `<rect x="160" y="155" width="140" height="26" rx="8" fill="#7e22ce"/>`;
+            svg += `<text x="230" y="173" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">4 + 4 = 8 LEGS!</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 3. Animal Sky Flyer (Eagle)
+      {
+        question: 'Which of these animals can soar high up in the blue sky: Penguin, Lion, or Eagle?',
+        answerRaw: 'eagle',
+        answersAccepted: ['eagle', 'the eagle', 'an eagle'],
+        answerTitle: 'Answer: The Eagle! 🦅',
+        explanation: 'Eagles have big, powerful wings to soar through clouds! Penguins swim in water and lions run on grass.',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="2"/>`;
+          // 3 cards
+          const animals = [
+            { x: 90, emoji: '🐧', name: 'Penguin', fly: false },
+            { x: 230, emoji: '🦁', name: 'Lion', fly: false },
+            { x: 370, emoji: '🦅', name: 'Eagle', fly: true }
+          ];
+          animals.forEach(a => {
+            const isWinner = isRevealed && a.fly;
+            svg += `<rect x="${a.x - 55}" y="35" width="110" height="125" rx="16" fill="${isWinner ? '#d1fae5' : '#fff'}" stroke="${isWinner ? '#10b981' : '#cbd5e1'}" stroke-width="${isWinner ? '3' : '2'}"/>`;
+            svg += `<text x="${a.x}" y="95" font-size="46" text-anchor="middle">${a.emoji}</text>`;
+            svg += `<text x="${a.x}" y="135" font-family="'Fredoka', sans-serif" font-size="14" font-weight="800" fill="${isWinner ? '#065f46' : '#334155'}" text-anchor="middle">${a.name}</text>`;
+            if (isRevealed && a.fly) {
+              svg += `<circle cx="${a.x}" cy="25" r="14" fill="#f59e0b"/>`;
+              svg += `<text x="${a.x}" y="30" font-size="14" text-anchor="middle">⭐</text>`;
+            }
+          });
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 4. Freezing Cold Rain turns to Snow
+      {
+        question: 'When it is freezing cold in the winter, falling raindrops turn into soft white...',
+        answerRaw: 'snow',
+        answersAccepted: ['snow', 'snowflakes', 'snowflake', 'fluffy snow'],
+        answerTitle: 'Answer: Fluffy White SNOW! ❄️',
+        explanation: 'When the air in the clouds drops below 32°F (0°C), water droplets freeze into beautiful crystalline snowflakes!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#0284c7" stroke="#0369a1" stroke-width="2"/>`;
+          // Snow hill
+          svg += `<path d="M10,150 Q160,110 300,140 T450,130 L450,190 L10,190 Z" fill="#f8fafc"/>`;
+          // Cloud
+          svg += `<ellipse cx="140" cy="50" rx="60" ry="25" fill="#e0f2fe"/>`;
+          svg += `<ellipse cx="180" cy="45" rx="40" ry="20" fill="#e0f2fe"/>`;
+          svg += `<text x="90" y="105" font-size="28" text-anchor="middle">❄️</text>`;
+          svg += `<text x="160" y="90" font-size="28" text-anchor="middle">❄️</text>`;
+          svg += `<text x="210" y="115" font-size="28" text-anchor="middle">❄️</text>`;
+          // Snowman on right
+          svg += `<text x="360" y="145" font-size="55" text-anchor="middle">⛄</text>`;
+          if (isRevealed) {
+            svg += `<rect x="150" y="145" width="160" height="30" rx="10" fill="#10b981"/>`;
+            svg += `<text x="230" y="166" font-family="'Fredoka', sans-serif" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">WHITE SNOW! ❄️</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 5. Five Senses - Smelling Flowers
+      {
+        question: 'Which body part and sense do you use to smell a pretty flower? 🌸 Eyes, Ears, or Nose?',
+        answerRaw: 'nose',
+        answersAccepted: ['nose', 'our nose', 'the nose', 'my nose', 'smell'],
+        answerTitle: 'Answer: Your NOSE! 👃',
+        explanation: 'You smell sweet roses with your nose, look at colors with your eyes, and listen with your ears!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fdf4ff" stroke="#f0abfc" stroke-width="2"/>`;
+          // Flower on left
+          svg += `<text x="110" y="125" font-size="65" text-anchor="middle">🌹</text>`;
+          // Scent waves
+          svg += `<path d="M150,90 Q180,60 210,90 T270,90" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="5,4"/>`;
+          // Face sniffing on right
+          svg += `<circle cx="340" cy="100" r="45" fill="#fed7aa"/>`;
+          svg += `<circle cx="325" cy="85" r="5" fill="#334155"/>`;
+          svg += `<path d="M320,118 Q335,130 350,118" fill="none" stroke="#334155" stroke-width="3" stroke-linecap="round"/>`;
+          // Nose
+          svg += `<circle cx="320" cy="98" r="8" fill="#fb923c"/>`;
+          if (isRevealed) {
+            svg += `<rect x="290" y="150" width="100" height="26" rx="8" fill="#db2777"/>`;
+            svg += `<text x="340" y="168" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">NOSE 👃</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 6. Egg Layer (Hen/Bird)
+      {
+        question: 'Which of these animals lays eggs in a cozy nest: Puppy, Kitten, or Hen / Bird?',
+        answerRaw: 'hen',
+        answersAccepted: ['hen', 'bird', 'chicken', 'the hen', 'the bird'],
+        answerTitle: 'Answer: The Hen / Bird! 🐣',
+        explanation: 'Mother birds and hens lay eggs with hard shells and keep them warm until cute chicks hatch!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fefce8" stroke="#fef08a" stroke-width="2"/>`;
+          const cards = [
+            { x: 90, emoji: '🐶', name: 'Puppy', egg: false },
+            { x: 230, emoji: '🐱', name: 'Kitten', egg: false },
+            { x: 370, emoji: '🐔', name: 'Hen / Bird', egg: true }
+          ];
+          cards.forEach(c => {
+            const isWinner = isRevealed && c.egg;
+            svg += `<rect x="${c.x - 55}" y="35" width="110" height="125" rx="16" fill="${isWinner ? '#dcfce7' : '#fff'}" stroke="${isWinner ? '#10b981' : '#cbd5e1'}" stroke-width="${isWinner ? '3' : '2'}"/>`;
+            svg += `<text x="${c.x}" y="95" font-size="44" text-anchor="middle">${c.emoji}</text>`;
+            svg += `<text x="${c.x}" y="135" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="${isWinner ? '#065f46' : '#334155'}" text-anchor="middle">${c.name}</text>`;
+            if (isWinner) {
+              svg += `<text x="${c.x}" y="30" font-size="18" text-anchor="middle">🥚✨</text>`;
+            }
+          });
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 7. Caterpillar Metamorphosis
+      {
+        question: 'A tiny caterpillar crawls on a green leaf, sleeps in a chrysalis, and turns into a...',
+        answerRaw: 'butterfly',
+        answersAccepted: ['butterfly', 'a butterfly', 'pretty butterfly'],
+        answerTitle: 'Answer: A Beautiful BUTTERFLY! 🦋',
+        explanation: 'This amazing magical change is called metamorphosis! The crawler grows colorful wings and flies!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="2"/>`;
+          // Step 1: Caterpillar
+          svg += `<text x="90" y="90" font-size="44" text-anchor="middle">🐛</text>`;
+          svg += `<text x="90" y="130" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="#15803d" text-anchor="middle">1. Caterpillar</text>`;
+          // Arrow 1
+          svg += `<text x="175" y="95" font-size="24" text-anchor="middle">➡️</text>`;
+          // Step 2: Chrysalis
+          svg += `<ellipse cx="230" cy="85" rx="14" ry="26" fill="#84cc16" stroke="#4d7c0f" stroke-width="2"/>`;
+          svg += `<line x1="230" y1="50" x2="230" y2="60" stroke="#713f12" stroke-width="3"/>`;
+          svg += `<text x="230" y="130" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="#15803d" text-anchor="middle">2. Chrysalis</text>`;
+          // Arrow 2
+          svg += `<text x="285" y="95" font-size="24" text-anchor="middle">➡️</text>`;
+          // Step 3: Butterfly
+          if (isRevealed) {
+            svg += `<text x="360" y="90" font-size="50" text-anchor="middle">🦋</text>`;
+            svg += `<text x="360" y="130" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="#047857" text-anchor="middle">3. BUTTERFLY!</text>`;
+          } else {
+            svg += `<circle cx="360" cy="85" r="32" fill="#fff" stroke="#94a3b8" stroke-dasharray="4,4" stroke-width="2"/>`;
+            svg += `<text x="360" y="96" font-size="28" text-anchor="middle">❓</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 8. Melting Ice Cube
+      {
+        question: 'What happens to a solid ice cube if you leave it out in the warm sunshine? ☀️🧊',
+        answerRaw: 'melts',
+        answersAccepted: ['melts', 'it melts', 'melt', 'turns to water', 'water', 'it melts into water'],
+        answerTitle: 'Answer: It MELTS into Water! 💧',
+        explanation: 'Heat energy from the warm sun warms up the solid ice until it melts into a liquid puddle!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>`;
+          // Sun beaming from top left
+          svg += `<text x="70" y="65" font-size="48" text-anchor="middle">☀️</text>`;
+          // Sun rays
+          svg += `<line x1="105" y1="70" x2="200" y2="105" stroke="#facc15" stroke-width="3" stroke-dasharray="6,4"/>`;
+          if (!isRevealed) {
+            // Cold Ice cube
+            svg += `<rect x="230" y="80" width="60" height="60" rx="10" fill="#bae6fd" stroke="#38bdf8" stroke-width="3"/>`;
+            svg += `<text x="260" y="118" font-size="28" text-anchor="middle">🧊</text>`;
+            svg += `<text x="360" y="115" font-size="36" text-anchor="middle">❓</text>`;
+          } else {
+            // Melted puddle
+            svg += `<ellipse cx="280" cy="130" rx="80" ry="24" fill="#60a5fa" opacity="0.6"/>`;
+            svg += `<rect x="260" y="100" width="40" height="25" rx="6" fill="#bae6fd" stroke="#38bdf8" stroke-width="2"/>`;
+            svg += `<text x="280" y="115" font-size="18" text-anchor="middle">💧</text>`;
+            svg += `<rect x="210" y="155" width="140" height="26" rx="8" fill="#0284c7"/>`;
+            svg += `<text x="280" y="173" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">MELTED WATER!</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 9. Day vs Night: The Sun
+      {
+        question: 'What giant bright glowing star gives Earth warm light during the DAYTIME? ☀️',
+        answerRaw: 'sun',
+        answersAccepted: ['sun', 'the sun', 'sunshine'],
+        answerTitle: 'Answer: The SUN! ☀️',
+        explanation: 'The Sun is our closest star! It gives light, heat, and energy to every plant, animal, and person!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#38bdf8" stroke="#0284c7" stroke-width="2"/>`;
+          // Green hill
+          svg += `<path d="M10,160 Q230,120 450,160 L450,190 L10,190 Z" fill="#22c55e"/>`;
+          // Sun
+          svg += `<circle cx="230" cy="75" r="42" fill="#facc15" stroke="#eab308" stroke-width="4"/>`;
+          // Sun face
+          svg += `<circle cx="218" cy="70" r="4" fill="#713f12"/><circle cx="242" cy="70" r="4" fill="#713f12"/>`;
+          svg += `<path d="M220,85 Q230,95 240,85" fill="none" stroke="#713f12" stroke-width="3" stroke-linecap="round"/>`;
+          if (isRevealed) {
+            svg += `<rect x="160" y="145" width="140" height="28" rx="8" fill="#f59e0b"/>`;
+            svg += `<text x="230" y="164" font-family="'Fredoka', sans-serif" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">THE BRIGHT SUN! ☀️</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 10. Monkey's Fruit (Banana)
+      {
+        question: 'Which fruit is yellow, curved like a smile, and monkeys love to peel and eat? 🍌',
+        answerRaw: 'banana',
+        answersAccepted: ['banana', 'a banana', 'bananas'],
+        answerTitle: 'Answer: A BANANA! 🍌',
+        explanation: 'Bananas grow on big green tropical plants and are packed with sweet energy and yummy nutrients!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fefce8" stroke="#fef08a" stroke-width="2"/>`;
+          svg += `<text x="120" y="115" font-size="70" text-anchor="middle">🐒</text>`;
+          if (isRevealed) {
+            svg += `<text x="320" y="115" font-size="70" text-anchor="middle">🍌</text>`;
+            svg += `<rect x="260" y="145" width="120" height="26" rx="8" fill="#eab308"/>`;
+            svg += `<text x="320" y="163" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="#fff" text-anchor="middle">BANANA! 🍌</text>`;
+          } else {
+            svg += `<circle cx="320" cy="95" r="45" fill="#fff" stroke="#cbd5e1" stroke-dasharray="4,4" stroke-width="2"/>`;
+            svg += `<text x="320" y="108" font-size="40" text-anchor="middle">❓</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 11. Days of the Week (7)
+      {
+        question: 'Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday! How many days in ONE week?',
+        answerRaw: '7',
+        answersAccepted: ['7', 'seven', '7 days', 'seven days'],
+        answerTitle: 'Answer: 7 Days in a Week! 📅',
+        explanation: 'There are exactly 7 days in every week: 5 school days and 2 weekend fun days!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>`;
+          const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+          const startX = 35;
+          const boxW = 52;
+          days.forEach((d, idx) => {
+            const x = startX + idx * 56;
+            const isWeekend = idx === 0 || idx === 6;
+            svg += `<rect x="${x}" y="60" width="${boxW}" height="${boxW}" rx="10" fill="${isWeekend ? '#fef3c7' : '#e0f2fe'}" stroke="${isWeekend ? '#f59e0b' : '#38bdf8'}" stroke-width="2"/>`;
+            svg += `<text x="${x + boxW/2}" y="88" font-family="'Fredoka', sans-serif" font-size="14" font-weight="800" fill="#1e293b" text-anchor="middle">${d}</text>`;
+            if (isRevealed) {
+              svg += `<circle cx="${x + boxW/2}" cy="102" r="8" fill="#10b981"/>`;
+              svg += `<text x="${x + boxW/2}" y="106" font-family="'Fredoka', sans-serif" font-size="10" font-weight="800" fill="#fff" text-anchor="middle">${idx + 1}</text>`;
+            }
+          });
+          if (isRevealed) {
+            svg += `<rect x="150" y="145" width="160" height="28" rx="8" fill="#10b981"/>`;
+            svg += `<text x="230" y="164" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="#fff" text-anchor="middle">7 DAYS IN A WEEK!</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 12. What Plants Need (Water & Sunlight)
+      {
+        question: 'A tiny seed in the soil needs bright sunshine and one more drink to grow tall. What is it? 💧',
+        answerRaw: 'water',
+        answersAccepted: ['water', 'rain', 'water and sun', 'drink of water'],
+        answerTitle: 'Answer: WATER! 💧🌱',
+        explanation: 'Plants drink water through their roots and catch sunshine on their leaves to grow strong!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="2"/>`;
+          // Soil
+          svg += `<rect x="10" y="140" width="440" height="50" fill="#78350f" rx="6"/>`;
+          // Sun
+          svg += `<text x="70" y="60" font-size="44" text-anchor="middle">☀️</text>`;
+          // Plant sprout
+          svg += `<path d="M230,140 Q230,105 230,95" stroke="#22c55e" stroke-width="5" stroke-linecap="round"/>`;
+          svg += `<ellipse cx="220" cy="95" rx="14" ry="7" fill="#4ade80" transform="rotate(-30 220 95)"/>`;
+          svg += `<ellipse cx="240" cy="95" rx="14" ry="7" fill="#4ade80" transform="rotate(30 240 95)"/>`;
+          // Watering can on right
+          svg += `<text x="360" y="75" font-size="45" text-anchor="middle">🚿</text>`;
+          svg += `<path d="M335,80 Q290,105 250,120" stroke="#38bdf8" stroke-width="3" stroke-dasharray="4,4" fill="none"/>`;
+          if (isRevealed) {
+            svg += `<rect x="150" y="20" width="160" height="28" rx="8" fill="#0284c7"/>`;
+            svg += `<text x="230" y="39" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">SUN + WATER = 🌱</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      }
+    ],
+
+    // ----------------------------------------------------
+    // TRACK 3: 🦁 PLAYFUL RIDDLES (12 Slides)
+    // ----------------------------------------------------
+    riddles: [
+      // 1. The Clock
+      {
+        question: 'I have a round face and two ticking hands, but no arms and no legs! I tell you when it is snack time. What am I?',
+        answerRaw: 'clock',
+        answersAccepted: ['clock', 'a clock', 'watch', 'a watch'],
+        answerTitle: 'Answer: A CLOCK! ⏰',
+        explanation: 'Tick-tock! The clock\'s short hand points to the hour, and the long hand points to the minutes!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#eff6ff" stroke="#bfdbfe" stroke-width="2"/>`;
+          svg += `<circle cx="230" cy="100" r="60" fill="#fff" stroke="#3b82f6" stroke-width="6"/>`;
+          // Center dot
+          svg += `<circle cx="230" cy="100" r="5" fill="#1e293b"/>`;
+          // Hands (pointing to 3:00)
+          svg += `<line x1="230" y1="100" x2="230" y2="55" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>`;
+          svg += `<line x1="230" y1="100" x2="270" y2="100" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>`;
+          // Tick marks 12, 3, 6, 9
+          svg += `<text x="230" y="52" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#64748b" text-anchor="middle">12</text>`;
+          svg += `<text x="282" y="104" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#64748b" text-anchor="middle">3</text>`;
+          svg += `<text x="230" y="152" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#64748b" text-anchor="middle">6</text>`;
+          svg += `<text x="178" y="104" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#64748b" text-anchor="middle">9</text>`;
+          if (isRevealed) {
+            svg += `<rect x="150" y="15" width="160" height="26" rx="8" fill="#3b82f6"/>`;
+            svg += `<text x="230" y="33" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">TICK-TOCK CLOCK! ⏰</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 2. The Cat
+      {
+        question: 'I have soft whiskers, four furry paws, a tail, and I purr \'Meow!\' when I want a bowl of milk. Who am I?',
+        answerRaw: 'cat',
+        answersAccepted: ['cat', 'a cat', 'kitten', 'a kitten', 'kitty'],
+        answerTitle: 'Answer: A Cat / Kitten! 🐱',
+        explanation: 'Cats love napping in sunny windows, batting at yarn balls, and purring when they are happy!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fff7ed" stroke="#fed7aa" stroke-width="2"/>`;
+          svg += `<text x="200" y="125" font-size="80" text-anchor="middle">🐱</text>`;
+          // Yarn ball
+          svg += `<circle cx="310" cy="120" r="22" fill="#ef4444"/>`;
+          svg += `<path d="M295,120 Q310,105 325,120" stroke="#fee2e2" stroke-width="2" fill="none"/>`;
+          svg += `<text x="310" y="127" font-family="'Fredoka', sans-serif" font-size="10" font-weight="800" fill="#fff" text-anchor="middle">YARN</text>`;
+          if (isRevealed) {
+            svg += `<rect x="160" y="20" width="140" height="28" rx="8" fill="#f97316"/>`;
+            svg += `<text x="230" y="39" font-family="'Fredoka', sans-serif" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">MEOW! IT\'S A CAT! 🐱</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 3. The Egg
+      {
+        question: 'You must crack me open before you can cook or eat me! What am I?',
+        answerRaw: 'egg',
+        answersAccepted: ['egg', 'an egg'],
+        answerTitle: 'Answer: An EGG! 🥚',
+        explanation: 'Crack! Break the smooth outer shell to scramble delicious eggs or bake fluffy birthday cakes!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>`;
+          if (!isRevealed) {
+            // Whole egg
+            svg += `<ellipse cx="230" cy="100" rx="45" ry="60" fill="#fef3c7" stroke="#fde68a" stroke-width="4"/>`;
+            svg += `<text x="230" y="110" font-size="40" text-anchor="middle">❓</text>`;
+          } else {
+            // Cracked egg with yolk
+            svg += `<path d="M190,130 Q170,80 200,60 L215,80 L205,95 L220,110 Z" fill="#fef3c7" stroke="#fde68a" stroke-width="2"/>`;
+            svg += `<path d="M270,130 Q290,80 260,60 L245,80 L255,95 L240,110 Z" fill="#fef3c7" stroke="#fde68a" stroke-width="2"/>`;
+            svg += `<circle cx="230" cy="115" r="24" fill="#f59e0b"/>`;
+            svg += `<text x="230" y="122" font-size="18" text-anchor="middle">✨</text>`;
+            svg += `<rect x="160" y="150" width="140" height="26" rx="8" fill="#f59e0b"/>`;
+            svg += `<text x="230" y="168" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="#fff" text-anchor="middle">CRACK! AN EGG! 🥚</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 4. The Honeybee
+      {
+        question: 'I wear fuzzy yellow and black stripes, I buzz from flower to flower, and I make sweet golden honey! Who am I?',
+        answerRaw: 'bee',
+        answersAccepted: ['bee', 'a bee', 'honeybee', 'a honeybee', 'bumblebee'],
+        answerTitle: 'Answer: A Honeybee! 🐝',
+        explanation: 'Buzzzz! Honeybees sip sweet nectar from colorful blossoms and make honey for their hive!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fefce8" stroke="#fef08a" stroke-width="2"/>`;
+          svg += `<text x="120" y="130" font-size="55" text-anchor="middle">🌸</text>`;
+          // Flight path
+          svg += `<path d="M140,95 Q200,40 260,85" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6,4"/>`;
+          svg += `<text x="280" y="95" font-size="60" text-anchor="middle">🐝</text>`;
+          if (isRevealed) {
+            svg += `<text x="380" y="110" font-size="44" text-anchor="middle">🍯</text>`;
+            svg += `<rect x="150" y="145" width="160" height="28" rx="8" fill="#d97706"/>`;
+            svg += `<text x="230" y="164" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">BUZZZZ! A HONEYBEE! 🐝</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 5. The Umbrella
+      {
+        question: 'I go UP when the raindrops fall DOWN, and I keep your head cozy and dry! What am I?',
+        answerRaw: 'umbrella',
+        answersAccepted: ['umbrella', 'an umbrella'],
+        answerTitle: 'Answer: An UMBRELLA! ☂️',
+        explanation: 'Open the canopy when raindrops splash down from storm clouds to stay completely dry!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f0f9ff" stroke="#bae6fd" stroke-width="2"/>`;
+          // Raindrops
+          const drops = [50, 90, 130, 330, 370, 410];
+          drops.forEach(d => {
+            svg += `<text x="${d}" y="60" font-size="20" text-anchor="middle">💧</text>`;
+            svg += `<text x="${d + 20}" y="110" font-size="20" text-anchor="middle">💧</text>`;
+          });
+          // Giant Umbrella in center
+          svg += `<path d="M170,100 Q230,35 290,100 Z" fill="#ec4899" stroke="#db2777" stroke-width="3"/>`;
+          svg += `<line x1="230" y1="100" x2="230" y2="145" stroke="#475569" stroke-width="4" stroke-linecap="round"/>`;
+          svg += `<path d="M230,145 Q230,158 220,155" fill="none" stroke="#475569" stroke-width="4" stroke-linecap="round"/>`;
+          if (isRevealed) {
+            svg += `<rect x="150" y="155" width="160" height="26" rx="8" fill="#db2777"/>`;
+            svg += `<text x="230" y="173" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">AN UMBRELLA! ☂️</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 6. The Snail
+      {
+        question: 'I crawl slowly across the green grass, and I carry my whole spiral house on my back! Who am I?',
+        answerRaw: 'snail',
+        answersAccepted: ['snail', 'a snail'],
+        answerTitle: 'Answer: A SNAIL! 🐌',
+        explanation: 'A snail carries its shell wherever it goes and glides along on a smooth shiny trail!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="2"/>`;
+          // Clover grass
+          svg += `<rect x="10" y="145" width="440" height="45" fill="#86efac" rx="6"/>`;
+          svg += `<text x="80" y="145" font-size="30" text-anchor="middle">🍀</text>`;
+          svg += `<text x="380" y="145" font-size="30" text-anchor="middle">🍀</text>`;
+          // Snail
+          svg += `<text x="220" y="130" font-size="80" text-anchor="middle">🐌</text>`;
+          if (isRevealed) {
+            svg += `<rect x="160" y="20" width="140" height="28" rx="8" fill="#15803d"/>`;
+            svg += `<text x="230" y="39" font-family="'Fredoka', sans-serif" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">SLOW SNAIL! 🐌</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 7. The Snowman
+      {
+        question: 'I have an orange carrot nose, two coal eyes, and a red scarf. But I melt away when warm sunshine arrives! Who am I?',
+        answerRaw: 'snowman',
+        answersAccepted: ['snowman', 'a snowman'],
+        answerTitle: 'Answer: A SNOWMAN! ⛄',
+        explanation: 'Built out of 3 big rolled snowballs in winter! When spring sunshine warms the air, the snowman melts!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#e0f2fe" stroke="#bae6fd" stroke-width="2"/>`;
+          svg += `<text x="230" y="135" font-size="85" text-anchor="middle">⛄</text>`;
+          svg += `<text x="350" y="80" font-size="40" text-anchor="middle">☀️</text>`;
+          if (isRevealed) {
+            svg += `<rect x="150" y="145" width="160" height="28" rx="8" fill="#0284c7"/>`;
+            svg += `<text x="230" y="164" font-family="'Fredoka', sans-serif" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">CHILLY SNOWMAN! ⛄</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 8. The Puppy
+      {
+        question: 'I have four legs, floppy ears, and I wag my tail happily when you come home! Who am I?',
+        answerRaw: 'dog',
+        answersAccepted: ['dog', 'a dog', 'puppy', 'a puppy'],
+        answerTitle: 'Answer: A Puppy / Dog! 🐶',
+        explanation: 'Puppies love fetching tennis balls, learning fun tricks, getting belly rubs, and wagging their tails!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fefce8" stroke="#fef08a" stroke-width="2"/>`;
+          svg += `<text x="200" y="125" font-size="80" text-anchor="middle">🐶</text>`;
+          svg += `<text x="310" y="115" font-size="44" text-anchor="middle">🦴</text>`;
+          if (isRevealed) {
+            svg += `<rect x="150" y="20" width="160" height="28" rx="8" fill="#eab308"/>`;
+            svg += `<text x="230" y="39" font-family="'Fredoka', sans-serif" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">WAGGING PUPPY! 🐶</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 9. The Birthday Candle
+      {
+        question: 'I am tall when first lit, and I get shorter and shorter as I burn on your birthday cake! What am I?',
+        answerRaw: 'candle',
+        answersAccepted: ['candle', 'a candle', 'birthday candle'],
+        answerTitle: 'Answer: A Birthday CANDLE! 🕯️',
+        explanation: 'Make a special birthday wish and blow out the candle flame!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fdf2f8" stroke="#fbcfe8" stroke-width="2"/>`;
+          // Cupcake base
+          svg += `<rect x="180" y="125" width="100" height="40" rx="8" fill="#f472b6"/>`;
+          svg += `<ellipse cx="230" cy="125" rx="55" ry="18" fill="#fbcfe8"/>`;
+          // Tall Candle
+          svg += `<rect x="224" y="65" width="12" height="55" rx="3" fill="#38bdf8"/>`;
+          // Flame
+          svg += `<ellipse cx="230" cy="50" rx="6" ry="12" fill="#f59e0b"/>`;
+          svg += `<ellipse cx="230" cy="52" rx="3" ry="6" fill="#fef08a"/>`;
+          if (isRevealed) {
+            svg += `<rect x="150" y="15" width="160" height="26" rx="8" fill="#ec4899"/>`;
+            svg += `<text x="230" y="33" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">BIRTHDAY CANDLE! 🕯️</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 10. The Elephant
+      {
+        question: 'I am the biggest land animal! I have giant floppy ears and a long nose called a trunk. Who am I?',
+        answerRaw: 'elephant',
+        answersAccepted: ['elephant', 'an elephant'],
+        answerTitle: 'Answer: An ELEPHANT! 🐘',
+        explanation: 'Elephants use their amazing trunks to spray cool water, trumpet loudly, and grab tasty leaves!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/>`;
+          svg += `<text x="210" y="130" font-size="85" text-anchor="middle">🐘</text>`;
+          // Water spray from trunk
+          svg += `<path d="M140,90 Q90,60 110,35 Q130,50 150,75" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="4,3"/>`;
+          svg += `<text x="100" y="45" font-size="18" text-anchor="middle">💦</text>`;
+          if (isRevealed) {
+            svg += `<rect x="150" y="150" width="160" height="26" rx="8" fill="#475569"/>`;
+            svg += `<text x="230" y="168" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">MIGHTY ELEPHANT! 🐘</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 11. The Moon
+      {
+        question: 'I glow in the night sky. Sometimes I am round like a ball, and sometimes curved like a banana! What am I?',
+        answerRaw: 'moon',
+        answersAccepted: ['moon', 'the moon'],
+        answerTitle: 'Answer: The MOON! 🌙',
+        explanation: 'The Moon orbits Earth! When the sun lights up just one side, it looks like a glowing crescent curve!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#0f172a" stroke="#334155" stroke-width="2"/>`;
+          svg += `<circle cx="80" cy="40" r="1.5" fill="#fff"/><circle cx="380" cy="50" r="1.5" fill="#fff"/><circle cx="340" cy="130" r="1.5" fill="#fff"/>`;
+          svg += `<text x="230" y="125" font-size="85" text-anchor="middle">🌙</text>`;
+          if (isRevealed) {
+            svg += `<rect x="160" y="145" width="140" height="28" rx="8" fill="#f59e0b"/>`;
+            svg += `<text x="230" y="164" font-family="'Fredoka', sans-serif" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">NIGHT MOON! 🌙</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 12. The Frog
+      {
+        question: 'I am green, I live by lily pads, I catch flies with my long tongue, and I say \'Ribbit! Ribbit!\' Who am I?',
+        answerRaw: 'frog',
+        answersAccepted: ['frog', 'a frog', 'toad', 'a toad'],
+        answerTitle: 'Answer: A FROG! 🐸',
+        explanation: 'Ribbit! Frogs are amphibians that start as swimming tadpoles and grow into high-jumping frogs!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="2"/>`;
+          // Lily pad
+          svg += `<ellipse cx="230" cy="140" rx="75" ry="24" fill="#22c55e" stroke="#15803d" stroke-width="2"/>`;
+          svg += `<text x="230" y="125" font-size="70" text-anchor="middle">🐸</text>`;
+          svg += `<text x="330" y="90" font-size="24" text-anchor="middle">🪰</text>`;
+          if (isRevealed) {
+            // Sticky tongue
+            svg += `<path d="M250,105 Q290,95 320,90" stroke="#f43f5e" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+            svg += `<rect x="160" y="15" width="140" height="28" rx="8" fill="#15803d"/>`;
+            svg += `<text x="230" y="34" font-family="'Fredoka', sans-serif" font-size="14" font-weight="900" fill="#fff" text-anchor="middle">RIBBIT! A FROG! 🐸</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      }
+    ],
+
+    // ----------------------------------------------------
+    // TRACK 4: 🧩 SHAPE & LOGIC PUZZLES (12 Slides)
+    // ----------------------------------------------------
+    puzzles: [
+      // 1. Color Circle Pattern (Red, Blue, Red, Blue... ?)
+      {
+        question: 'What color circle comes next in this pattern? 🔴 🔵 🔴 🔵 [?]',
+        answerRaw: 'red',
+        answersAccepted: ['red', 'red circle', 'the red one'],
+        answerTitle: 'Answer: RED Circle! 🔴',
+        explanation: 'The pattern repeats: Red, Blue, Red, Blue... so the next circle in line must be RED!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>`;
+          const circles = [
+            { x: 70, fill: '#ef4444' },
+            { x: 150, fill: '#3b82f6' },
+            { x: 230, fill: '#ef4444' },
+            { x: 310, fill: '#3b82f6' }
+          ];
+          circles.forEach(c => {
+            svg += `<circle cx="${c.x}" cy="100" r="30" fill="${c.fill}"/>`;
+          });
+          // Question box slot
+          if (isRevealed) {
+            svg += `<circle cx="390" cy="100" r="30" fill="#ef4444" stroke="#10b981" stroke-width="4"/>`;
+            svg += `<text x="390" y="108" font-family="'Fredoka', sans-serif" font-size="18" font-weight="900" fill="#fff" text-anchor="middle">RED</text>`;
+            svg += `<rect x="150" y="150" width="160" height="26" rx="8" fill="#10b981"/>`;
+            svg += `<text x="230" y="168" font-family="'Fredoka', sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">PATTERN: RED, BLUE...</text>`;
+          } else {
+            svg += `<circle cx="390" cy="100" r="30" fill="#fff" stroke="#f59e0b" stroke-width="3" stroke-dasharray="5,4"/>`;
+            svg += `<text x="390" y="110" font-family="'Fredoka', sans-serif" font-size="30" font-weight="900" fill="#f59e0b" text-anchor="middle">?</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 2. Shape Sequence: Triangle, Square
+      {
+        question: 'What shape comes next in this pattern? ▲ ■ ▲ ■ [?]',
+        answerRaw: 'triangle',
+        answersAccepted: ['triangle', 'a triangle'],
+        answerTitle: 'Answer: TRIANGLE! ▲',
+        explanation: 'Triangle, Square, Triangle, Square... the repeating shape sequence starts over with a TRIANGLE!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fefce8" stroke="#fef08a" stroke-width="2"/>`;
+          // 1: Triangle
+          svg += `<polygon points="70,65 95,125 45,125" fill="#f59e0b"/>`;
+          // 2: Square
+          svg += `<rect x="125" y="70" width="50" height="50" rx="6" fill="#8b5cf6"/>`;
+          // 3: Triangle
+          svg += `<polygon points="230,65 255,125 205,125" fill="#f59e0b"/>`;
+          // 4: Square
+          svg += `<rect x="285" y="70" width="50" height="50" rx="6" fill="#8b5cf6"/>`;
+          // 5: Slot
+          if (isRevealed) {
+            svg += `<polygon points="390,65 415,125 365,125" fill="#f59e0b" stroke="#10b981" stroke-width="4"/>`;
+            svg += `<rect x="140" y="150" width="180" height="26" rx="8" fill="#10b981"/>`;
+            svg += `<text x="230" y="168" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="#fff" text-anchor="middle">TRIANGLE COMES NEXT!</text>`;
+          } else {
+            svg += `<rect x="365" y="70" width="50" height="50" rx="8" fill="#fff" stroke="#f59e0b" stroke-width="3" stroke-dasharray="5,4"/>`;
+            svg += `<text x="390" y="105" font-family="'Fredoka', sans-serif" font-size="28" font-weight="800" fill="#f59e0b" text-anchor="middle">?</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 3. Odd One Out: Animals vs Apple
+      {
+        question: 'Look at the four cards: 🐶 Dog, 🐱 Cat, 🐰 Bunny, 🍎 Apple. Which one does NOT belong?',
+        answerRaw: 'apple',
+        answersAccepted: ['apple', 'the apple', 'an apple', 'fruit'],
+        answerTitle: 'Answer: The APPLE! 🍎',
+        explanation: 'The dog, cat, and bunny are living, breathing animals! The apple is a delicious piece of fruit!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>`;
+          const cards = [
+            { x: 65, emoji: '🐶', label: 'Dog', isOdd: false },
+            { x: 175, emoji: '🐱', label: 'Cat', isOdd: false },
+            { x: 285, emoji: '🐰', label: 'Bunny', isOdd: false },
+            { x: 395, emoji: '🍎', label: 'Apple', isOdd: true }
+          ];
+          cards.forEach(c => {
+            const isWinner = isRevealed && c.isOdd;
+            svg += `<rect x="${c.x - 45}" y="35" width="90" height="120" rx="14" fill="${isWinner ? '#fee2e2' : '#fff'}" stroke="${isWinner ? '#ef4444' : '#cbd5e1'}" stroke-width="${isWinner ? '3.5' : '2'}"/>`;
+            svg += `<text x="${c.x}" y="95" font-size="44" text-anchor="middle">${c.emoji}</text>`;
+            svg += `<text x="${c.x}" y="135" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="${isWinner ? '#b91c1c' : '#334155'}" text-anchor="middle">${c.label}</text>`;
+            if (isWinner) {
+              svg += `<circle cx="${c.x}" cy="24" r="12" fill="#ef4444"/>`;
+              svg += `<text x="${c.x}" y="29" font-family="'Fredoka', sans-serif" font-size="12" font-weight="900" fill="#fff" text-anchor="middle">★</text>`;
+            }
+          });
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 4. Shadow Match (Butterfly)
+      {
+        question: 'Which dark shadow matches the colorful butterfly: Shadow A, B, or C?',
+        answerRaw: 'B',
+        answersAccepted: ['b', 'shadow b', 'b matches', '2'],
+        answerTitle: 'Answer: Shadow B! 🦋',
+        explanation: 'Shadow B has the matching curved antennae and twin round wings of the butterfly!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="2"/>`;
+          // Original butterfly
+          svg += `<rect x="25" y="30" width="110" height="135" rx="16" fill="#fff" stroke="#10b981" stroke-width="3"/>`;
+          svg += `<text x="80" y="100" font-size="55" text-anchor="middle">🦋</text>`;
+          svg += `<text x="80" y="145" font-family="'Fredoka', sans-serif" font-size="12" font-weight="900" fill="#047857" text-anchor="middle">COLORFUL</text>`;
+
+          // Shadows A, B, C
+          const shadows = [
+            { x: 195, label: 'A', icon: '🐝', correct: false },
+            { x: 285, label: 'B', icon: '🦋', correct: true },
+            { x: 375, label: 'C', icon: '🪲', correct: false }
+          ];
+          shadows.forEach(s => {
+            const isWinner = isRevealed && s.correct;
+            svg += `<rect x="${s.x - 40}" y="35" width="80" height="130" rx="14" fill="${isWinner ? '#d1fae5' : '#1e293b'}" stroke="${isWinner ? '#10b981' : '#334155'}" stroke-width="${isWinner ? '3' : '2'}"/>`;
+            svg += `<g style="filter: brightness(0);">${`<text x="${s.x}" y="100" font-size="44" text-anchor="middle">${s.icon}</text>`}</g>`;
+            svg += `<rect x="${s.x - 22}" y="130" width="44" height="22" rx="6" fill="${isWinner ? '#10b981' : '#475569'}"/>`;
+            svg += `<text x="${s.x}" y="146" font-family="'Fredoka', sans-serif" font-size="12" font-weight="900" fill="#fff" text-anchor="middle">${s.label}</text>`;
+          });
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 5. Size Ordering (Ant, Dog, Elephant)
+      {
+        question: 'Look at the 3 animals: Ant, Dog, and Elephant! Which one is the BIGGEST of all?',
+        answerRaw: 'elephant',
+        answersAccepted: ['elephant', 'the elephant', 'an elephant'],
+        answerTitle: 'Answer: The ELEPHANT! 🐘',
+        explanation: 'The tiny ant is smallest, the dog is medium, and the huge elephant is the biggest of all!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>`;
+          // Ground
+          svg += `<line x1="20" y1="160" x2="440" y2="160" stroke="#cbd5e1" stroke-width="3"/>`;
+          // Ant (Small)
+          svg += `<text x="70" y="155" font-size="24" text-anchor="middle">🐜</text>`;
+          svg += `<text x="70" y="180" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#64748b" text-anchor="middle">Small</text>`;
+          // Dog (Medium)
+          svg += `<text x="190" y="150" font-size="50" text-anchor="middle">🐕</text>`;
+          svg += `<text x="190" y="180" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#64748b" text-anchor="middle">Medium</text>`;
+          // Elephant (Biggest)
+          svg += `<text x="350" y="140" font-size="90" text-anchor="middle">🐘</text>`;
+          const elColor = isRevealed ? '#10b981' : '#64748b';
+          svg += `<text x="350" y="180" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="${elColor}" text-anchor="middle">BIGGEST!</text>`;
+          if (isRevealed) {
+            svg += `<circle cx="350" cy="30" r="16" fill="#f59e0b"/>`;
+            svg += `<text x="350" y="36" font-size="18" text-anchor="middle">⭐</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 6. Fruit Pattern (Apple, Banana, Apple, Banana...)
+      {
+        question: 'Look at the fruit pattern: 🍎 🍌 🍎 🍌 [?] What fruit comes next?',
+        answerRaw: 'apple',
+        answersAccepted: ['apple', 'an apple', 'the apple', 'red apple'],
+        answerTitle: 'Answer: An APPLE! 🍎',
+        explanation: 'Apple, Banana, Apple, Banana... the repeating fruit pattern starts over with an APPLE!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fefce8" stroke="#fef08a" stroke-width="2"/>`;
+          const fruits = [
+            { x: 70, f: '🍎' },
+            { x: 150, f: '🍌' },
+            { x: 230, f: '🍎' },
+            { x: 310, f: '🍌' }
+          ];
+          fruits.forEach(fr => {
+            svg += `<text x="${fr.x}" y="115" font-size="50" text-anchor="middle">${fr.f}</text>`;
+          });
+          if (isRevealed) {
+            svg += `<rect x="360" y="55" width="65" height="75" rx="14" fill="#fee2e2" stroke="#ef4444" stroke-width="3"/>`;
+            svg += `<text x="392" y="115" font-size="50" text-anchor="middle">🍎</text>`;
+            svg += `<rect x="150" y="150" width="160" height="26" rx="8" fill="#10b981"/>`;
+            svg += `<text x="230" y="168" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="#fff" text-anchor="middle">APPLE IS NEXT! 🍎</text>`;
+          } else {
+            svg += `<rect x="360" y="55" width="65" height="75" rx="14" fill="#fff" stroke="#f59e0b" stroke-width="3" stroke-dasharray="4,4"/>`;
+            svg += `<text x="392" y="105" font-family="'Fredoka', sans-serif" font-size="34" font-weight="800" fill="#f59e0b" text-anchor="middle">?</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 7. Full vs Empty Cup
+      {
+        question: 'Look at the two juice cups! Which cup is completely FULL: Cup A or Cup B?',
+        answerRaw: 'A',
+        answersAccepted: ['a', 'cup a', 'glass a', '1'],
+        answerTitle: 'Answer: Cup A is FULL! 🧃',
+        explanation: 'Cup A has orange juice filled all the way to the top! Cup B is totally empty.',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#eff6ff" stroke="#bfdbfe" stroke-width="2"/>`;
+          // Table
+          svg += `<line x1="40" y1="160" x2="420" y2="160" stroke="#cbd5e1" stroke-width="3"/>`;
+          // Cup A (Full orange juice)
+          svg += `<path d="M100,50 L110,150 L160,150 L170,50 Z" fill="#fdba74" stroke="#f97316" stroke-width="3"/>`;
+          // Straw
+          svg += `<line x1="140" y1="140" x2="160" y2="30" stroke="#ef4444" stroke-width="5" stroke-linecap="round"/>`;
+          svg += `<rect x="110" y="165" width="50" height="22" rx="6" fill="${isRevealed ? '#10b981' : '#64748b'}"/>`;
+          svg += `<text x="135" y="180" font-family="'Fredoka', sans-serif" font-size="12" font-weight="900" fill="#fff" text-anchor="middle">Cup A</text>`;
+
+          // Cup B (Empty glass)
+          svg += `<path d="M290,50 L300,150 L350,150 L360,50 Z" fill="rgba(255,255,255,0.7)" stroke="#94a3b8" stroke-width="3"/>`;
+          svg += `<rect x="300" y="165" width="50" height="22" rx="6" fill="#64748b"/>`;
+          svg += `<text x="325" y="180" font-family="'Fredoka', sans-serif" font-size="12" font-weight="900" fill="#fff" text-anchor="middle">Cup B</text>`;
+
+          if (isRevealed) {
+            svg += `<circle cx="135" cy="20" r="14" fill="#f59e0b"/>`;
+            svg += `<text x="135" y="25" font-size="14" text-anchor="middle">⭐</text>`;
+            svg += `<rect x="200" y="85" width="80" height="26" rx="8" fill="#10b981"/>`;
+            svg += `<text x="240" y="103" font-family="'Fredoka', sans-serif" font-size="12" font-weight="900" fill="#fff" text-anchor="middle">FULL! 🧃</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 8. Things That Go Together (Shoe & Sock)
+      {
+        question: 'You put on your shoe 👟! Which item goes together with your shoe: Sock, Spoon, or Car?',
+        answerRaw: 'sock',
+        answersAccepted: ['sock', 'a sock', 'socks', 'the sock'],
+        answerTitle: 'Answer: A SOCK! 🧦',
+        explanation: 'Shoes and socks are best buddies for your feet! You put cozy socks on before your shoes!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>`;
+          // Shoe on left
+          svg += `<rect x="25" y="35" width="110" height="130" rx="16" fill="#e0f2fe" stroke="#38bdf8" stroke-width="3"/>`;
+          svg += `<text x="80" y="105" font-size="55" text-anchor="middle">👟</text>`;
+          svg += `<text x="80" y="145" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="#0369a1" text-anchor="middle">SHOE</text>`;
+
+          // 3 choices
+          const choices = [
+            { x: 200, icon: '🧦', name: 'Sock', match: true },
+            { x: 290, icon: '🥄', name: 'Spoon', match: false },
+            { x: 380, icon: '🚗', name: 'Car', match: false }
+          ];
+          choices.forEach(c => {
+            const isWinner = isRevealed && c.match;
+            svg += `<rect x="${c.x - 40}" y="40" width="80" height="120" rx="14" fill="${isWinner ? '#dcfce7' : '#fff'}" stroke="${isWinner ? '#10b981' : '#cbd5e1'}" stroke-width="${isWinner ? '3.5' : '2'}"/>`;
+            svg += `<text x="${c.x}" y="100" font-size="44" text-anchor="middle">${c.icon}</text>`;
+            svg += `<text x="${c.x}" y="140" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="${isWinner ? '#065f46' : '#334155'}" text-anchor="middle">${c.name}</text>`;
+            if (isWinner) {
+              svg += `<circle cx="${c.x}" cy="28" r="12" fill="#10b981"/>`;
+              svg += `<text x="${c.x}" y="33" font-size="12" text-anchor="middle">✓</text>`;
+            }
+          });
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 9. Missing Puzzle Piece
+      {
+        question: 'A puzzle corner is missing from the striped square! Which piece fits: Piece A, B, or C?',
+        answerRaw: 'A',
+        answersAccepted: ['a', 'piece a', '1'],
+        answerTitle: 'Answer: Piece A! 🧩',
+        explanation: 'Piece A has the matching blue color and diagonal stripe to complete the square puzzle!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f0f9ff" stroke="#bae6fd" stroke-width="2"/>`;
+          // Main square with top-right corner missing
+          svg += `<rect x="60" y="45" width="100" height="100" rx="8" fill="#3b82f6"/>`;
+          svg += `<line x1="60" y1="145" x2="160" y2="45" stroke="#fff" stroke-width="8"/>`;
+          // Cutout in top right
+          svg += `<rect x="120" y="45" width="40" height="40" fill="#f0f9ff" stroke="#f59e0b" stroke-dasharray="4,3" stroke-width="2"/>`;
+          svg += `<text x="140" y="72" font-family="'Fredoka', sans-serif" font-size="16" font-weight="900" fill="#f59e0b" text-anchor="middle">?</text>`;
+
+          // 3 Pieces
+          const pieces = [
+            { x: 230, label: 'A', fill: '#3b82f6', stripe: true, match: true },
+            { x: 305, label: 'B', fill: '#ef4444', stripe: false, match: false },
+            { x: 380, label: 'C', fill: '#10b981', stripe: false, match: false }
+          ];
+          pieces.forEach(p => {
+            const isWinner = isRevealed && p.match;
+            svg += `<rect x="${p.x - 30}" y="65" width="60" height="60" rx="8" fill="${p.fill}" stroke="${isWinner ? '#f59e0b' : '#cbd5e1'}" stroke-width="${isWinner ? '4' : '2'}"/>`;
+            if (p.stripe) {
+              svg += `<line x1="${p.x - 30}" y1="125" x2="${p.x + 30}" y2="65" stroke="#fff" stroke-width="6"/>`;
+            }
+            svg += `<rect x="${p.x - 16}" y="135" width="32" height="20" rx="6" fill="${isWinner ? '#10b981' : '#64748b'}"/>`;
+            svg += `<text x="${p.x}" y="149" font-family="'Fredoka', sans-serif" font-size="12" font-weight="900" fill="#fff" text-anchor="middle">${p.label}</text>`;
+          });
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 10. Odd One Out (Vehicles vs Lion)
+      {
+        question: 'Look at the 4 pictures: 🚗 Car, ✈️ Airplane, 🚢 Boat, 🦁 Lion. Which one does NOT belong?',
+        answerRaw: 'lion',
+        answersAccepted: ['lion', 'the lion', 'a lion', 'animal'],
+        answerTitle: 'Answer: The LION! 🦁',
+        explanation: 'The car, airplane, and boat are vehicles that people ride in! The lion is a wild furry animal!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>`;
+          const cards = [
+            { x: 65, emoji: '🚗', name: 'Car', isOdd: false },
+            { x: 175, emoji: '✈️', name: 'Plane', isOdd: false },
+            { x: 285, emoji: '🚢', name: 'Boat', isOdd: false },
+            { x: 395, emoji: '🦁', name: 'Lion', isOdd: true }
+          ];
+          cards.forEach(c => {
+            const isWinner = isRevealed && c.isOdd;
+            svg += `<rect x="${c.x - 45}" y="35" width="90" height="120" rx="14" fill="${isWinner ? '#fef3c7' : '#fff'}" stroke="${isWinner ? '#f59e0b' : '#cbd5e1'}" stroke-width="${isWinner ? '3.5' : '2'}"/>`;
+            svg += `<text x="${c.x}" y="95" font-size="44" text-anchor="middle">${c.emoji}</text>`;
+            svg += `<text x="${c.x}" y="135" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="${isWinner ? '#b45309' : '#334155'}" text-anchor="middle">${c.name}</text>`;
+            if (isWinner) {
+              svg += `<circle cx="${c.x}" cy="24" r="12" fill="#f59e0b"/>`;
+              svg += `<text x="${c.x}" y="29" font-family="'Fredoka', sans-serif" font-size="12" font-weight="900" fill="#fff" text-anchor="middle">★</text>`;
+            }
+          });
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 11. Star Size Detective (Smallest Star)
+      {
+        question: 'Look at Star 1, Star 2, and Star 3! Which star is the SMALLEST of all?',
+        answerRaw: '1',
+        answersAccepted: ['1', 'star 1', 'first', 'the first one', 'one'],
+        answerTitle: 'Answer: Star 1! ⭐',
+        explanation: 'Star 1 is tiny, Star 2 is medium, and Star 3 is giant! Star 1 is the smallest!',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#0f172a" stroke="#334155" stroke-width="2"/>`;
+          // Star 1 (Tiny)
+          svg += `<text x="90" y="110" font-size="30" text-anchor="middle">⭐</text>`;
+          svg += `<rect x="65" y="140" width="50" height="22" rx="6" fill="${isRevealed ? '#10b981' : '#334155'}"/>`;
+          svg += `<text x="90" y="155" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">Star 1</text>`;
+
+          // Star 2 (Medium)
+          svg += `<text x="215" y="115" font-size="52" text-anchor="middle">⭐</text>`;
+          svg += `<rect x="190" y="140" width="50" height="22" rx="6" fill="#334155"/>`;
+          svg += `<text x="215" y="155" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">Star 2</text>`;
+
+          // Star 3 (Giant)
+          svg += `<text x="350" y="125" font-size="80" text-anchor="middle">⭐</text>`;
+          svg += `<rect x="325" y="140" width="50" height="22" rx="6" fill="#334155"/>`;
+          svg += `<text x="350" y="155" font-family="'Fredoka', sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">Star 3</text>`;
+
+          if (isRevealed) {
+            svg += `<circle cx="90" cy="55" r="14" fill="#10b981"/>`;
+            svg += `<text x="90" y="60" font-family="'Fredoka', sans-serif" font-size="12" font-weight="900" fill="#fff" text-anchor="middle">✓</text>`;
+            svg += `<rect x="150" y="20" width="160" height="26" rx="8" fill="#10b981"/>`;
+            svg += `<text x="230" y="38" font-family="'Fredoka', sans-serif" font-size="13" font-weight="900" fill="#fff" text-anchor="middle">STAR 1 IS SMALLEST!</text>`;
+          }
+          svg += `</svg>`;
+          return svg;
+        }
+      },
+
+      // 12. Animal Homes (Beehive)
+      {
+        question: 'Where does a busy honeybee live? Bird Nest, Beehive, or Doghouse?',
+        answerRaw: 'beehive',
+        answersAccepted: ['beehive', 'a beehive', 'the beehive', 'hive'],
+        answerTitle: 'Answer: A BEEHIVE! 🍯',
+        explanation: 'Bees build golden honeycomb beehives! Birds make stick nests and dogs live in doghouses.',
+        render: (isRevealed) => {
+          let svg = `<svg viewBox="0 0 460 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">`;
+          svg += `<rect x="10" y="10" width="440" height="180" rx="20" fill="#fefce8" stroke="#fef08a" stroke-width="2"/>`;
+          // Flying bee on left
+          svg += `<text x="65" y="105" font-size="50" text-anchor="middle">🐝</text>`;
+          svg += `<text x="65" y="145" font-family="'Fredoka', sans-serif" font-size="12" font-weight="900" fill="#b45309" text-anchor="middle">Bee</text>`;
+
+          // 3 homes
+          const homes = [
+            { x: 175, icon: '🪹', name: 'Nest', match: false },
+            { x: 285, icon: '🍯', name: 'Beehive', match: true },
+            { x: 395, icon: '🏠', name: 'Doghouse', match: false }
+          ];
+          homes.forEach(h => {
+            const isWinner = isRevealed && h.match;
+            svg += `<rect x="${h.x - 45}" y="35" width="90" height="120" rx="14" fill="${isWinner ? '#fef3c7' : '#fff'}" stroke="${isWinner ? '#f59e0b' : '#cbd5e1'}" stroke-width="${isWinner ? '3.5' : '2'}"/>`;
+            svg += `<text x="${h.x}" y="95" font-size="44" text-anchor="middle">${h.icon}</text>`;
+            svg += `<text x="${h.x}" y="135" font-family="'Fredoka', sans-serif" font-size="12" font-weight="800" fill="${isWinner ? '#b45309' : '#334155'}" text-anchor="middle">${h.name}</text>`;
+            if (isWinner) {
+              svg += `<circle cx="${h.x}" cy="24" r="12" fill="#f59e0b"/>`;
+              svg += `<text x="${h.x}" y="29" font-size="12" text-anchor="middle">⭐</text>`;
+            }
+          });
+          svg += `</svg>`;
+          return svg;
+        }
+      }
+    ]
+  };
+
+  // ========================================================
+  // KINDERGARTEN SLIDE RENDER & ADVANCE LOGIC
+  // ========================================================
+  function renderKindergartenSlideDots(totalSlides, currentIdx) {
+    if (!kindergartenSlideDots) return;
+    kindergartenSlideDots.innerHTML = '';
+    for (let i = 0; i < totalSlides; i++) {
+      const dot = document.createElement('span');
+      dot.className = `slide-dot ${i === currentIdx ? 'active' : ''}`;
+      dot.setAttribute('title', `Go to slide ${i + 1}`);
+      dot.addEventListener('click', () => {
+        showKindergartenSlide(i);
+      });
+      kindergartenSlideDots.appendChild(dot);
+    }
+  }
+
+  function showKindergartenSlide(index) {
+    kindergartenState = 'QUESTION';
+    const slides = KINDERGARTEN_SLIDES[activeKindergartenTrack] || [];
+    if (!slides.length) return;
+
+    if (index < 0) index = 0;
+    if (index >= slides.length) index = slides.length - 1;
+
+    trackKindergartenIndices[activeKindergartenTrack] = index;
+    currentKindergartenSlide = slides[index];
+
+    kindergartenCardEl.style.animation = 'none';
+    void kindergartenCardEl.offsetWidth;
+    kindergartenCardEl.style.animation = 'popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    playPopSound();
+
+    const trackNames = {
+      math: 'Counting & Math',
+      questions: 'Curious Questions',
+      riddles: 'Playful Riddles',
+      puzzles: 'Shape Puzzles'
+    };
+    kindergartenBadgeEl.textContent = `🌱 Kindergarten • ${trackNames[activeKindergartenTrack] || ''}`;
+    kindergartenSlideIndicator.textContent = `Slide ${index + 1} of ${slides.length}`;
+    renderKindergartenSlideDots(slides.length, index);
+
+    prevKindergartenSlideBtn.disabled = (index === 0);
+    nextKindergartenSlideBtn.disabled = (index === slides.length - 1);
+
+    kindergartenQuestionEl.textContent = currentKindergartenSlide.question;
+    kindergartenViewportEl.innerHTML = currentKindergartenSlide.render(false);
+
+    kindergartenAnswerInput.value = '';
+    kindergartenInputFeedback.textContent = '';
+    kindergartenInputFeedback.className = 'input-feedback';
+
+    kindergartenSolutionBoxEl.classList.add('hidden');
+    kindergartenAnswerTitleEl.textContent = '';
+    kindergartenExplanationEl.textContent = '';
+
+    kindergartenActionBtn.classList.remove('next-mode');
+    kindergartenActionText.textContent = 'Reveal Answer';
+  }
+
+  function revealKindergartenSolution() {
+    kindergartenState = 'SOLUTION';
+    if (!currentKindergartenSlide) return;
+
+    kindergartenViewportEl.innerHTML = currentKindergartenSlide.render(true);
+
+    kindergartenAnswerTitleEl.textContent = currentKindergartenSlide.answerTitle;
+    kindergartenExplanationEl.textContent = currentKindergartenSlide.explanation;
+    kindergartenSolutionBoxEl.classList.remove('hidden');
+
+    const typed = kindergartenAnswerInput.value.trim().toLowerCase();
+    let isCorrectTyped = null;
+    if (typed !== '') {
+      const accepted = currentKindergartenSlide.answersAccepted.map(a => a.toLowerCase().trim());
+      const raw = currentKindergartenSlide.answerRaw.toLowerCase().trim();
+      if (accepted.includes(typed) || typed === raw) {
+        isCorrectTyped = true;
+        kindergartenInputFeedback.textContent = '🌟 Spot on! You are so smart!';
+        kindergartenInputFeedback.className = 'input-feedback correct';
+      } else {
+        isCorrectTyped = false;
+        kindergartenInputFeedback.textContent = `Nice try! The answer is: ${currentKindergartenSlide.answerRaw}`;
+        kindergartenInputFeedback.className = 'input-feedback incorrect';
+      }
+    }
+
+    if (isCorrectTyped === false) {
+      streak = 0;
+    } else {
+      streak += 1;
+    }
+    if (typeof ProfileManager !== 'undefined' && ProfileManager.recordCompletion) {
+      ProfileManager.recordCompletion('kindergarten', streak);
+    } else {
+      totalCompleted += 1;
+    }
+    saveStats();
+    updateStatsUI();
+
+    if (streak > 0 && streak % 5 === 0) {
+      playChimeSound(true);
+      triggerConfetti();
+      streakPillEl.classList.add('bump');
+      setTimeout(() => streakPillEl.classList.remove('bump'), 300);
+    } else {
+      playChimeSound(false);
+    }
+
+    kindergartenActionBtn.classList.add('next-mode');
+    kindergartenActionText.textContent = 'Next Question →';
+  }
+
+  function prevKindergartenSlide() {
+    const currentIdx = trackKindergartenIndices[activeKindergartenTrack] || 0;
+    if (currentIdx > 0) {
+      showKindergartenSlide(currentIdx - 1);
+    }
+  }
+
+  function nextKindergartenSlide() {
+    const slides = KINDERGARTEN_SLIDES[activeKindergartenTrack] || [];
+    const currentIdx = trackKindergartenIndices[activeKindergartenTrack] || 0;
+    if (currentIdx < slides.length - 1) {
+      showKindergartenSlide(currentIdx + 1);
+    } else {
+      showKindergartenSlide(0);
+    }
+  }
+
+  function handleKindergartenAdvance() {
+    kindergartenActionBtn.classList.add('pressed');
+    setTimeout(() => kindergartenActionBtn.classList.remove('pressed'), 120);
+
+    if (kindergartenState === 'QUESTION') {
+      revealKindergartenSolution();
+    } else if (kindergartenState === 'SOLUTION') {
+      nextKindergartenSlide();
+    }
+  }
+
+  // ========================================================
+  // PER-USER PROFILE PERSISTENCE LAYER (ZERO AUTH)
+  // ========================================================
+  const AVATARS = ['🎈', '🚀', '🦊', '🐱', '🐶', '🐻', '🦁', '🦄', '🦖', '🌟', '🐼', '🐨'];
+  const STORAGE_PROFILES_KEY = 'mathpop_profiles_v1';
+  const STORAGE_ACTIVE_PROFILE_KEY = 'mathpop_active_profile_id';
+
+  let profiles = [];
+  let activeProfileId = null;
+  let selectedNewAvatar = '🎈';
+  let selectedEditAvatar = '🎈';
+
+  const ProfileManager = {
+    init() {
+      try {
+        const stored = localStorage.getItem(STORAGE_PROFILES_KEY);
+        if (stored) {
+          profiles = JSON.parse(stored);
+        }
+      } catch (err) {
+        console.warn('Could not parse profiles from localStorage:', err);
+        profiles = [];
+      }
+
+      // Backward Compatibility & Migration:
+      // If no profiles array exists yet, read legacy mathpop_total and mathpop_streak
+      if (!Array.isArray(profiles) || profiles.length === 0) {
+        const legacyTotal = parseInt(localStorage.getItem('mathpop_total') || '0', 10);
+        const legacyStreak = parseInt(localStorage.getItem('mathpop_streak') || '0', 10);
+        const defaultProfile = {
+          id: 'prof_' + Date.now(),
+          name: 'Player 1',
+          avatar: '🎈',
+          createdAt: Date.now(),
+          stats: {
+            totalCompleted: legacyTotal,
+            currentStreak: legacyStreak,
+            bestStreak: legacyStreak,
+            categories: {
+              kindergarten: 0,
+              grade2: legacyTotal > 0 ? legacyTotal : 0,
+              grade3: 0,
+              grade4: 0,
+              grade5: 0,
+              riddles: 0,
+              science: 0
+            }
+          }
+        };
+        profiles = [defaultProfile];
+        activeProfileId = defaultProfile.id;
+        this.saveProfiles();
+      } else {
+        // Ensure data consistency across schema versions
+        profiles.forEach(p => {
+          if (!p.stats) p.stats = {};
+          if (typeof p.stats.totalCompleted !== 'number') p.stats.totalCompleted = 0;
+          if (typeof p.stats.currentStreak !== 'number') p.stats.currentStreak = 0;
+          if (typeof p.stats.bestStreak !== 'number') p.stats.bestStreak = p.stats.currentStreak || 0;
+          if (!p.stats.categories) p.stats.categories = {};
+        });
+
+        activeProfileId = localStorage.getItem(STORAGE_ACTIVE_PROFILE_KEY);
+        if (!activeProfileId || !profiles.some(p => p.id === activeProfileId)) {
+          activeProfileId = profiles[0].id;
+          localStorage.setItem(STORAGE_ACTIVE_PROFILE_KEY, activeProfileId);
+        }
+      }
+
+      this.syncActiveToGlobalState();
+    },
+
+    getProfiles() {
+      return profiles;
+    },
+
+    saveProfiles() {
+      try {
+        localStorage.setItem(STORAGE_PROFILES_KEY, JSON.stringify(profiles));
+        if (activeProfileId) {
+          localStorage.setItem(STORAGE_ACTIVE_PROFILE_KEY, activeProfileId);
+        }
+        // Mirror active stats to legacy keys
+        const active = this.getActiveProfile();
+        if (active) {
+          localStorage.setItem('mathpop_streak', (active.stats.currentStreak || 0).toString());
+          localStorage.setItem('mathpop_total', (active.stats.totalCompleted || 0).toString());
+        }
+      } catch (err) {
+        console.error('Failed to save profiles to localStorage:', err);
+      }
+    },
+
+    getActiveProfile() {
+      return profiles.find(p => p.id === activeProfileId) || profiles[0];
+    },
+
+    setActiveProfile(id) {
+      const match = profiles.find(p => p.id === id);
+      if (!match) return;
+      activeProfileId = id;
+      this.syncActiveToGlobalState();
+      this.saveProfiles();
+      updateStatsUI();
+      renderProfileModalContent();
+    },
+
+    syncActiveToGlobalState() {
+      const active = this.getActiveProfile();
+      if (active) {
+        streak = active.stats.currentStreak || 0;
+        totalCompleted = active.stats.totalCompleted || 0;
+      }
+    },
+
+    updateStats(currentStreak, total) {
+      const active = this.getActiveProfile();
+      if (!active) return;
+      active.stats.currentStreak = currentStreak;
+      active.stats.totalCompleted = total;
+      active.stats.bestStreak = Math.max(active.stats.bestStreak || 0, currentStreak);
+      this.saveProfiles();
+    },
+
+    recordCompletion(categoryKey, currentStreak) {
+      const active = this.getActiveProfile();
+      if (!active) return;
+      active.stats.totalCompleted = (active.stats.totalCompleted || 0) + 1;
+      active.stats.currentStreak = currentStreak;
+      active.stats.bestStreak = Math.max(active.stats.bestStreak || 0, currentStreak);
+      if (!active.stats.categories) active.stats.categories = {};
+      active.stats.categories[categoryKey] = (active.stats.categories[categoryKey] || 0) + 1;
+
+      this.syncActiveToGlobalState();
+      this.saveProfiles();
+      if (profileModal && !profileModal.classList.contains('hidden')) {
+        renderProfileModalContent();
+      }
+    },
+
+    createProfile(name, avatar) {
+      const cleanName = (name || '').trim() || `Player ${profiles.length + 1}`;
+      const newProfile = {
+        id: 'prof_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        name: cleanName,
+        avatar: avatar || '🎈',
+        createdAt: Date.now(),
+        stats: {
+          totalCompleted: 0,
+          currentStreak: 0,
+          bestStreak: 0,
+          categories: {
+            kindergarten: 0,
+            grade2: 0,
+            grade3: 0,
+            grade4: 0,
+            grade5: 0,
+            riddles: 0,
+            science: 0
+          }
+        }
+      };
+      profiles.push(newProfile);
+      this.setActiveProfile(newProfile.id);
+    },
+
+    updateProfileInfo(id, newName, newAvatar) {
+      const profile = profiles.find(p => p.id === id);
+      if (!profile) return;
+      if (newName && newName.trim()) {
+        profile.name = newName.trim();
+      }
+      if (newAvatar) {
+        profile.avatar = newAvatar;
+      }
+      this.saveProfiles();
+      updateStatsUI();
+      renderProfileModalContent();
+    },
+
+    resetProfileStats(id) {
+      const profile = profiles.find(p => p.id === id);
+      if (!profile) return;
+      profile.stats.totalCompleted = 0;
+      profile.stats.currentStreak = 0;
+      profile.stats.bestStreak = 0;
+      profile.stats.categories = {
+        kindergarten: 0,
+        grade2: 0,
+        grade3: 0,
+        grade4: 0,
+        grade5: 0,
+        riddles: 0,
+        science: 0
+      };
+      if (id === activeProfileId) {
+        this.syncActiveToGlobalState();
+      }
+      this.saveProfiles();
+      updateStatsUI();
+      renderProfileModalContent();
+    },
+
+    deleteProfile(id) {
+      if (profiles.length <= 1) {
+        alert('You must keep at least one player profile!');
+        return;
+      }
+      const index = profiles.findIndex(p => p.id === id);
+      if (index === -1) return;
+      profiles.splice(index, 1);
+      if (activeProfileId === id) {
+        activeProfileId = profiles[0].id;
+        this.syncActiveToGlobalState();
+      }
+      this.saveProfiles();
+      updateStatsUI();
+      renderProfileModalContent();
+    },
+
+    exportData() {
+      const data = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        activeProfileId,
+        profiles
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mathpop-profiles-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
+
+    importData(jsonString) {
+      try {
+        const parsed = JSON.parse(jsonString);
+        let importedProfiles = [];
+        if (Array.isArray(parsed)) {
+          importedProfiles = parsed;
+        } else if (parsed && Array.isArray(parsed.profiles)) {
+          importedProfiles = parsed.profiles;
+        } else {
+          throw new Error('Invalid file format: No profiles list found.');
+        }
+
+        if (importedProfiles.length === 0) {
+          throw new Error('Backup file contains no profiles.');
+        }
+
+        importedProfiles.forEach((p, i) => {
+          if (!p.id) p.id = 'prof_' + Date.now() + '_' + i;
+          if (!p.name) p.name = `Player ${i + 1}`;
+          if (!p.avatar) p.avatar = '🎈';
+          if (!p.stats) p.stats = {};
+          if (typeof p.stats.totalCompleted !== 'number') p.stats.totalCompleted = 0;
+          if (typeof p.stats.currentStreak !== 'number') p.stats.currentStreak = 0;
+          if (typeof p.stats.bestStreak !== 'number') p.stats.bestStreak = p.stats.currentStreak || 0;
+          if (!p.stats.categories) p.stats.categories = {};
+        });
+
+        profiles = importedProfiles;
+        activeProfileId = (parsed.activeProfileId && profiles.some(p => p.id === parsed.activeProfileId))
+          ? parsed.activeProfileId
+          : profiles[0].id;
+
+        this.syncActiveToGlobalState();
+        this.saveProfiles();
+        updateStatsUI();
+        renderProfileModalContent();
+        alert('Profiles successfully imported!');
+      } catch (err) {
+        alert('Could not import profiles: ' + err.message);
+      }
+    }
+  };
+
+  // Profile Modal Helpers
+  function renderAvatarPicker(containerEl, currentAvatar, onSelect) {
+    if (!containerEl) return;
+    containerEl.innerHTML = '';
+    AVATARS.forEach(avatar => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'avatar-choice' + (avatar === currentAvatar ? ' selected' : '');
+      btn.textContent = avatar;
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        containerEl.querySelectorAll('.avatar-choice').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        onSelect(avatar);
+      });
+      containerEl.appendChild(btn);
+    });
+  }
+
+  function renderCategoryBreakdown(containerEl, categories) {
+    if (!containerEl) return;
+    containerEl.innerHTML = '';
+    const categoryLabels = [
+      { key: 'kindergarten', label: '🌱 Kindergarten' },
+      { key: 'grade2', label: '2️⃣ 2nd Grade' },
+      { key: 'grade3', label: '3️⃣ 3rd Grade' },
+      { key: 'grade4', label: '4️⃣ 4th Grade' },
+      { key: 'grade5', label: '5️⃣ 5th Grade' },
+      { key: 'riddles', label: '🧩 Teasers' },
+      { key: 'science', label: '🔬 Science' }
+    ];
+
+    categoryLabels.forEach(cat => {
+      const count = (categories && categories[cat.key]) || 0;
+      const chip = document.createElement('div');
+      chip.className = 'cat-chip';
+      chip.innerHTML = `<span>${cat.label}</span><span class="cat-chip-count">${count}</span>`;
+      containerEl.appendChild(chip);
+    });
+  }
+
+  function renderProfileModalContent() {
+    const active = ProfileManager.getActiveProfile();
+    if (!active) return;
+
+    if (modalActiveAvatar) modalActiveAvatar.textContent = active.avatar || '🎈';
+    if (modalActiveName) modalActiveName.textContent = active.name || 'Player 1';
+    if (modalTotalCompleted) modalTotalCompleted.textContent = active.stats.totalCompleted || 0;
+    if (modalCurrentStreak) modalCurrentStreak.textContent = active.stats.currentStreak || 0;
+    if (modalBestStreak) modalBestStreak.textContent = active.stats.bestStreak || 0;
+
+    renderCategoryBreakdown(categoryBreakdownGrid, active.stats.categories);
+
+    if (profileList) {
+      profileList.innerHTML = '';
+      const allProfiles = ProfileManager.getProfiles();
+      allProfiles.forEach(p => {
+        const item = document.createElement('div');
+        const isActive = p.id === active.id;
+        item.className = 'profile-item' + (isActive ? ' active' : '');
+
+        const leftDiv = document.createElement('div');
+        leftDiv.className = 'profile-item-left';
+
+        const avatarSpan = document.createElement('span');
+        avatarSpan.className = 'profile-item-avatar';
+        avatarSpan.textContent = p.avatar || '🎈';
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'profile-item-info';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'profile-item-name';
+        nameSpan.textContent = p.name;
+
+        const statsSpan = document.createElement('span');
+        statsSpan.className = 'profile-item-stats';
+        statsSpan.textContent = `${p.stats.totalCompleted || 0} completed • Best: ${p.stats.bestStreak || 0}`;
+
+        infoDiv.appendChild(nameSpan);
+        infoDiv.appendChild(statsSpan);
+        leftDiv.appendChild(avatarSpan);
+        leftDiv.appendChild(infoDiv);
+        item.appendChild(leftDiv);
+
+        if (isActive) {
+          const activeLabel = document.createElement('span');
+          activeLabel.className = 'profile-item-active-label';
+          activeLabel.textContent = 'Active';
+          item.appendChild(activeLabel);
+        } else {
+          const switchBtn = document.createElement('button');
+          switchBtn.type = 'button';
+          switchBtn.className = 'btn-switch';
+          switchBtn.textContent = 'Switch';
+          switchBtn.addEventListener('click', () => {
+            ProfileManager.setActiveProfile(p.id);
+          });
+          item.appendChild(switchBtn);
+        }
+
+        profileList.appendChild(item);
+      });
+
+      if (deleteProfileBtn) {
+        if (allProfiles.length > 1) {
+          deleteProfileBtn.classList.remove('hidden');
+        } else {
+          deleteProfileBtn.classList.add('hidden');
+        }
+      }
+    }
+  }
+
+  function openProfileModal() {
+    renderProfileModalContent();
+    hideNewPlayerForm();
+    hideEditProfile();
+    if (profileModal) profileModal.classList.remove('hidden');
+  }
+
+  function closeProfileModal() {
+    if (profileModal) profileModal.classList.add('hidden');
+    hideNewPlayerForm();
+    hideEditProfile();
+  }
+
+  function showEditProfile() {
+    const active = ProfileManager.getActiveProfile();
+    if (!active || !editPlayerForm) return;
+    editPlayerNameInput.value = active.name;
+    selectedEditAvatar = active.avatar || '🎈';
+    renderAvatarPicker(editAvatarPicker, selectedEditAvatar, (avatar) => {
+      selectedEditAvatar = avatar;
+    });
+    editPlayerForm.classList.remove('hidden');
+    editPlayerNameInput.focus();
+  }
+
+  function hideEditProfile() {
+    if (editPlayerForm) editPlayerForm.classList.add('hidden');
+  }
+
+  function toggleNewPlayerForm() {
+    if (!newPlayerForm) return;
+    if (newPlayerForm.classList.contains('hidden')) {
+      showNewPlayerForm();
+    } else {
+      hideNewPlayerForm();
+    }
+  }
+
+  function showNewPlayerForm() {
+    if (!newPlayerForm) return;
+    newPlayerNameInput.value = '';
+    selectedNewAvatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
+    renderAvatarPicker(newAvatarPicker, selectedNewAvatar, (avatar) => {
+      selectedNewAvatar = avatar;
+    });
+    newPlayerForm.classList.remove('hidden');
+    newPlayerNameInput.focus();
+  }
+
+  function hideNewPlayerForm() {
+    if (newPlayerForm) newPlayerForm.classList.add('hidden');
+  }
+
+  // ========================================================
   // STATS & UNIFIED NAVIGATION
   // ========================================================
   function saveStats() {
-    localStorage.setItem('mathpop_streak', streak.toString());
-    localStorage.setItem('mathpop_total', totalCompleted.toString());
+    ProfileManager.updateStats(streak, totalCompleted);
   }
 
   function updateStatsUI() {
-    streakCountEl.textContent = streak;
-    totalCompletedEl.textContent = totalCompleted;
+    const active = ProfileManager.getActiveProfile();
+    if (active) {
+      streakCountEl.textContent = active.stats.currentStreak || 0;
+      totalCompletedEl.textContent = active.stats.totalCompleted || 0;
+      if (profileAvatarEl) profileAvatarEl.textContent = active.avatar || '🎈';
+      if (profileNameEl) profileNameEl.textContent = active.name || 'Player';
+    } else {
+      streakCountEl.textContent = streak;
+      totalCompletedEl.textContent = totalCompleted;
+    }
   }
 
   function switchTab(newTab) {
@@ -3092,20 +5304,29 @@
       btn.setAttribute('aria-selected', isMatch ? 'true' : 'false');
     });
 
-    if (activeTab === 'riddles') {
-      mathSection.classList.add('hidden');
-      scienceSection.classList.add('hidden');
-      riddlesSection.classList.remove('hidden');
+    if (activeTab === 'kindergarten') {
+      if (mathSection) mathSection.classList.add('hidden');
+      if (scienceSection) scienceSection.classList.add('hidden');
+      if (riddlesSection) riddlesSection.classList.add('hidden');
+      if (kindergartenSection) kindergartenSection.classList.remove('hidden');
+      showKindergartenSlide(trackKindergartenIndices[activeKindergartenTrack] || 0);
+    } else if (activeTab === 'riddles') {
+      if (mathSection) mathSection.classList.add('hidden');
+      if (scienceSection) scienceSection.classList.add('hidden');
+      if (kindergartenSection) kindergartenSection.classList.add('hidden');
+      if (riddlesSection) riddlesSection.classList.remove('hidden');
       showSlide(trackSlideIndices[activeTeaserTrack] || 0);
     } else if (activeTab === 'science') {
-      mathSection.classList.add('hidden');
-      riddlesSection.classList.add('hidden');
-      scienceSection.classList.remove('hidden');
+      if (mathSection) mathSection.classList.add('hidden');
+      if (riddlesSection) riddlesSection.classList.add('hidden');
+      if (kindergartenSection) kindergartenSection.classList.add('hidden');
+      if (scienceSection) scienceSection.classList.remove('hidden');
       showScienceSlide(trackScienceIndices[activeScienceTrack] || 0);
     } else {
-      riddlesSection.classList.add('hidden');
-      scienceSection.classList.add('hidden');
-      mathSection.classList.remove('hidden');
+      if (riddlesSection) riddlesSection.classList.add('hidden');
+      if (scienceSection) scienceSection.classList.add('hidden');
+      if (kindergartenSection) kindergartenSection.classList.add('hidden');
+      if (mathSection) mathSection.classList.remove('hidden');
       renderTopicBar();
       showNewMathProblem();
     }
@@ -3115,14 +5336,33 @@
   // EVENT LISTENERS
   // ========================================================
   window.addEventListener('keydown', (e) => {
+    // If profile modal is open, Esc closes it, and do not trigger game advances
+    if (profileModal && !profileModal.classList.contains('hidden')) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeProfileModal();
+      }
+      return;
+    }
+
     if (e.code === 'Space' || e.key === ' ' || e.code === 'Enter' || e.key === 'Enter') {
       e.preventDefault();
-      if (activeTab === 'riddles') {
+      if (activeTab === 'kindergarten') {
+        handleKindergartenAdvance();
+      } else if (activeTab === 'riddles') {
         handleRiddleAdvance();
       } else if (activeTab === 'science') {
         handleScienceAdvance();
       } else {
         handleMathAdvance();
+      }
+    } else if (activeTab === 'kindergarten') {
+      if (e.key === 'ArrowLeft' && document.activeElement !== kindergartenAnswerInput) {
+        e.preventDefault();
+        prevKindergartenSlide();
+      } else if (e.key === 'ArrowRight' && document.activeElement !== kindergartenAnswerInput) {
+        e.preventDefault();
+        nextKindergartenSlide();
       }
     } else if (activeTab === 'riddles') {
       if (e.key === 'ArrowLeft' && document.activeElement !== riddleAnswerInput) {
@@ -3140,6 +5380,37 @@
         e.preventDefault();
         nextScienceSlide();
       }
+    }
+  });
+
+  kindergartenActionBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    handleKindergartenAdvance();
+  });
+
+  prevKindergartenSlideBtn.addEventListener('click', () => {
+    prevKindergartenSlide();
+  });
+
+  nextKindergartenSlideBtn.addEventListener('click', () => {
+    nextKindergartenSlide();
+  });
+
+  kindergartenTrackButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      kindergartenTrackButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeKindergartenTrack = btn.dataset.track;
+      showKindergartenSlide(trackKindergartenIndices[activeKindergartenTrack] || 0);
+    });
+  });
+
+  kindergartenSpeakBtn.addEventListener('click', () => {
+    if (!currentKindergartenSlide) return;
+    if (kindergartenState === 'QUESTION') {
+      speakKindergarten(currentKindergartenSlide.question);
+    } else {
+      speakKindergarten(currentKindergartenSlide.answerTitle + '. ' + currentKindergartenSlide.explanation);
     }
   });
 
@@ -3203,15 +5474,139 @@
   });
 
   resetStatsBtn.addEventListener('click', () => {
-    if (confirm('Reset your streak and completed count?')) {
+    const active = ProfileManager.getActiveProfile();
+    const pName = active ? active.name : 'your';
+    if (confirm(`Reset streak and completed count for ${pName}?`)) {
       streak = 0;
       totalCompleted = 0;
-      saveStats();
-      updateStatsUI();
+      if (active) {
+        ProfileManager.resetProfileStats(active.id);
+      } else {
+        saveStats();
+        updateStatsUI();
+      }
     }
   });
 
+  // Profile Modal Event Listeners
+  if (profileBtn) {
+    profileBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openProfileModal();
+    });
+  }
+
+  if (closeProfileModalBtn) {
+    closeProfileModalBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeProfileModal();
+    });
+  }
+
+  if (profileModal) {
+    profileModal.addEventListener('click', (e) => {
+      if (e.target === profileModal) {
+        closeProfileModal();
+      }
+    });
+  }
+
+  if (editProfileBtn) {
+    editProfileBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      showEditProfile();
+    });
+  }
+
+  if (cancelEditPlayerBtn) {
+    cancelEditPlayerBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      hideEditProfile();
+    });
+  }
+
+  if (editPlayerForm) {
+    editPlayerForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const active = ProfileManager.getActiveProfile();
+      if (active && editPlayerNameInput) {
+        ProfileManager.updateProfileInfo(active.id, editPlayerNameInput.value, selectedEditAvatar);
+      }
+      hideEditProfile();
+    });
+  }
+
+  if (toggleNewPlayerBtn) {
+    toggleNewPlayerBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      toggleNewPlayerForm();
+    });
+  }
+
+  if (cancelNewPlayerBtn) {
+    cancelNewPlayerBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      hideNewPlayerForm();
+    });
+  }
+
+  if (newPlayerForm) {
+    newPlayerForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (newPlayerNameInput) {
+        ProfileManager.createProfile(newPlayerNameInput.value, selectedNewAvatar);
+      }
+      hideNewPlayerForm();
+    });
+  }
+
+  if (resetProfileStatsBtn) {
+    resetProfileStatsBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const active = ProfileManager.getActiveProfile();
+      if (active && confirm(`Reset all stats and completed cards for ${active.name}?`)) {
+        ProfileManager.resetProfileStats(active.id);
+      }
+    });
+  }
+
+  if (deleteProfileBtn) {
+    deleteProfileBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const active = ProfileManager.getActiveProfile();
+      if (active && confirm(`Delete profile for ${active.name}? All progress will be removed.`)) {
+        ProfileManager.deleteProfile(active.id);
+      }
+    });
+  }
+
+  if (exportProfilesBtn) {
+    exportProfilesBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      ProfileManager.exportData();
+    });
+  }
+
+  if (importProfilesBtn && importFileInput) {
+    importProfilesBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      importFileInput.click();
+    });
+
+    importFileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        ProfileManager.importData(event.target.result);
+        importFileInput.value = '';
+      };
+      reader.readAsText(file);
+    });
+  }
+
   // Initialize
+  ProfileManager.init();
   soundToggleBtn.textContent = soundEnabled ? '🔊' : '🔇';
   updateStatsUI();
   renderTopicBar();

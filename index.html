@@ -20,6 +20,10 @@
       </div>
 
       <div class="header-controls">
+        <button id="profileBtn" class="profile-pill" aria-label="Player Profile" title="Switch or view player profile">
+          <span id="profileAvatar" class="profile-avatar">🎈</span>
+          <span id="profileName" class="profile-name">Player 1</span>
+        </button>
         <div class="streak-pill" id="streakPill" title="Current streak">
           <span class="star-icon">⭐</span>
           <span id="streakCount">0</span> in a row!
@@ -32,6 +36,9 @@
 
     <!-- Top Primary Navigation Tabs: Grades & Activities -->
     <nav class="app-tabs" role="tablist" aria-label="Grades and Activities">
+      <button class="app-tab" id="tabKindergarten" role="tab" aria-selected="false" data-tab="kindergarten">
+        🌱 Kindergarten
+      </button>
       <button class="app-tab active" id="tabGrade2" role="tab" aria-selected="true" data-tab="grade2">
         2nd Grade
       </button>
@@ -51,6 +58,70 @@
         🔬 Science Lab
       </button>
     </nav>
+
+    <!-- TAB SECTION: KINDERGARTEN (MATH, QUESTIONS, RIDDLES, PUZZLES) -->
+    <section id="kindergartenSection" class="tab-panel hidden" role="tabpanel">
+      <!-- Kindergarten Tracks: Math, Questions, Riddles, Puzzles -->
+      <div class="mode-selector" id="kindergartenTrackBar" role="radiogroup" aria-label="Kindergarten Activities">
+        <button class="kindergarten-track-btn active" data-track="math">🔢 Counting &amp; Math (12)</button>
+        <button class="kindergarten-track-btn" data-track="questions">❓ Curious Questions (12)</button>
+        <button class="kindergarten-track-btn" data-track="riddles">🦁 Playful Riddles (12)</button>
+        <button class="kindergarten-track-btn" data-track="puzzles">🧩 Shape Puzzles (12)</button>
+      </div>
+
+      <!-- Sequential Slide Navigation Toolbar -->
+      <div class="slide-nav-toolbar kindergarten-nav-toolbar" aria-label="Kindergarten Slide Navigation">
+        <button id="prevKindergartenSlideBtn" class="slide-nav-btn" title="Previous Slide (or Left Arrow)">← Prev</button>
+        <div class="slide-progress-info">
+          <span class="slide-counter-badge kindergarten-counter-badge" id="kindergartenSlideIndicator">Slide 1 of 12</span>
+          <div class="slide-dots" id="kindergartenSlideDots"></div>
+        </div>
+        <button id="nextKindergartenSlideBtn" class="slide-nav-btn" title="Next Slide (or Right Arrow)">Next →</button>
+        <button id="kindergartenSpeakBtn" class="icon-btn kindergarten-speak-btn" title="Read aloud to me!" aria-label="Read Question Aloud">🔊 Listen</button>
+      </div>
+
+      <!-- Main Kindergarten Pop-Up Card -->
+      <main class="card-stage">
+        <div class="popup-card kindergarten-card" id="kindergartenCard">
+          <div class="card-badge kindergarten-badge" id="kindergartenBadge">🌱 Kindergarten • Counting &amp; Math</div>
+
+          <!-- Kindergarten Question Header -->
+          <div class="riddle-header">
+            <h2 class="riddle-question kindergarten-question" id="kindergartenQuestion">How many ducklings are in the pond?</h2>
+          </div>
+
+          <!-- Graphic Viewport (Rich SVGs) -->
+          <div class="riddle-viewport kindergarten-viewport" id="kindergartenViewport">
+            <!-- SVG injected here -->
+          </div>
+
+          <!-- Optional Input Zone -->
+          <div class="interactive-input-zone" id="kindergartenInputZone">
+            <input 
+              type="text" 
+              id="kindergartenAnswerInput" 
+              placeholder="Type answer (or hit Space)" 
+              autocomplete="off"
+            />
+            <div class="input-feedback" id="kindergartenInputFeedback"></div>
+          </div>
+
+          <!-- Solution & Explanation Box -->
+          <div class="riddle-solution-box kindergarten-solution-box hidden" id="kindergartenSolutionBox">
+            <div class="riddle-answer-title kindergarten-answer-title" id="kindergartenAnswerTitle">Answer: 5 Ducklings! 🦆</div>
+            <div class="riddle-explanation kindergarten-explanation" id="kindergartenExplanation">Count them: 1, 2, 3, 4, 5 swimming happily!</div>
+          </div>
+
+          <!-- Spacebar Action Button -->
+          <div class="spacebar-bar-wrapper">
+            <button id="kindergartenActionBtn" class="spacebar-btn kindergarten-action-btn">
+              <span class="key-cap">SPACE</span>
+              <span class="action-text" id="kindergartenActionText">Reveal Answer</span>
+            </button>
+          </div>
+        </div>
+      </main>
+    </section>
 
     <!-- TAB SECTION: MATH (Grades 2-5) -->
     <section id="mathSection" class="tab-panel active" role="tabpanel">
@@ -247,6 +318,108 @@
         <button id="resetStatsBtn" class="link-btn">Reset Score</button>
       </div>
     </footer>
+  </div>
+
+  <!-- Profile & Persistence Modal -->
+  <div id="profileModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="profileModalTitle" class="modal-title">👤 Player Profile</h2>
+        <button id="closeProfileModalBtn" class="modal-close-btn" aria-label="Close Profile Modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Active Player Showcase -->
+        <div class="active-player-card">
+          <div class="player-identity">
+            <span id="modalActiveAvatar" class="player-avatar-large">🎈</span>
+            <div class="player-info">
+              <div class="player-name-row">
+                <h3 id="modalActiveName" class="player-name">Player 1</h3>
+                <button id="editProfileBtn" class="mini-btn" title="Edit nickname or avatar">✏️ Edit</button>
+              </div>
+              <span class="player-status-badge">Active Player</span>
+            </div>
+          </div>
+
+          <!-- Edit Player Form (Hidden by default) -->
+          <form id="editPlayerForm" class="edit-player-form hidden">
+            <div class="form-row">
+              <input type="text" id="editPlayerNameInput" maxlength="15" placeholder="Nickname" required />
+              <button type="submit" class="btn-primary-sm">Save</button>
+              <button type="button" id="cancelEditPlayerBtn" class="btn-secondary-sm">Cancel</button>
+            </div>
+            <div class="avatar-select-label">Pick Avatar:</div>
+            <div class="avatar-picker-grid" id="editAvatarPicker">
+              <!-- Emojis injected by JS -->
+            </div>
+          </form>
+
+          <!-- Player Key Stats -->
+          <div class="profile-stats-grid">
+            <div class="stat-box primary">
+              <span class="stat-number" id="modalTotalCompleted">0</span>
+              <span class="stat-label">Cards Completed</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-number" id="modalCurrentStreak">0</span>
+              <span class="stat-label">Current Streak</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-number" id="modalBestStreak">0</span>
+              <span class="stat-label">Best Streak ⭐</span>
+            </div>
+          </div>
+
+          <!-- Detailed Category Breakdown -->
+          <div class="category-breakdown-section">
+            <h4 class="breakdown-title">Cards Completed by Topic</h4>
+            <div class="category-chips-grid" id="categoryBreakdownGrid">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Switcher & Creator -->
+        <div class="profile-switcher-section">
+          <div class="section-header-row">
+            <h4>Switch Player</h4>
+            <button id="toggleNewPlayerBtn" class="btn-text">+ New Player</button>
+          </div>
+
+          <!-- Add New Player Form (Hidden by default) -->
+          <form id="newPlayerForm" class="new-player-form hidden">
+            <div class="form-row">
+              <input type="text" id="newPlayerNameInput" maxlength="15" placeholder="Enter nickname..." required />
+              <button type="submit" class="btn-primary-sm">Add</button>
+              <button type="button" id="cancelNewPlayerBtn" class="btn-secondary-sm">Cancel</button>
+            </div>
+            <div class="avatar-select-label">Pick an Avatar:</div>
+            <div class="avatar-picker-grid" id="newAvatarPicker">
+              <!-- Emojis injected by JS -->
+            </div>
+          </form>
+
+          <!-- Profiles List -->
+          <div class="profile-list" id="profileList">
+            <!-- Profile items injected by JS -->
+          </div>
+        </div>
+
+        <!-- Danger & Backup Management -->
+        <div class="profile-management-section">
+          <div class="danger-actions">
+            <button id="resetProfileStatsBtn" class="btn-warning-sm">Reset Active Stats</button>
+            <button id="deleteProfileBtn" class="btn-danger-sm hidden">Delete Profile</button>
+          </div>
+          <div class="backup-actions">
+            <button id="exportProfilesBtn" class="link-action">📥 Export Backup</button>
+            <button id="importProfilesBtn" class="link-action">📤 Import Data</button>
+            <input type="file" id="importFileInput" accept=".json" class="hidden" />
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <canvas id="confettiCanvas"></canvas>
