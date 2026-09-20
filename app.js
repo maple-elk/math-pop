@@ -2,11 +2,37 @@
 (function() {
   'use strict';
 
+  // Safe Storage wrapper to guard against private browsing restrictions & quota limits
+  const SafeStorage = {
+    _mem: {},
+    getItem(key) {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        return Object.prototype.hasOwnProperty.call(this._mem, key) ? this._mem[key] : null;
+      }
+    },
+    setItem(key, val) {
+      try {
+        localStorage.setItem(key, String(val));
+      } catch (e) {
+        this._mem[key] = String(val);
+      }
+    },
+    removeItem(key) {
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {
+        delete this._mem[key];
+      }
+    }
+  };
+
   // Global App State
   let activeTab = 'grade2'; // 'kindergarten' | 'grade2' | 'grade3' | 'grade4' | 'grade5' | 'riddles' | 'science'
-  let streak = parseInt(localStorage.getItem('mathpop_streak') || '0', 10);
-  let totalCompleted = parseInt(localStorage.getItem('mathpop_total') || '0', 10);
-  let soundEnabled = localStorage.getItem('mathpop_sound') !== 'false';
+  let streak = parseInt(SafeStorage.getItem('mathpop_streak') || '0', 10);
+  let totalCompleted = parseInt(SafeStorage.getItem('mathpop_total') || '0', 10);
+  let soundEnabled = SafeStorage.getItem('mathpop_sound') !== 'false';
 
   // Kindergarten State
   let activeKindergartenTrack = 'math'; // 'math' | 'questions' | 'riddles' | 'puzzles'
@@ -79,6 +105,9 @@
   const exportProfilesBtn = document.getElementById('exportProfilesBtn');
   const importProfilesBtn = document.getElementById('importProfilesBtn');
   const importFileInput = document.getElementById('importFileInput');
+  const modalPlayBtn = document.getElementById('modalPlayBtn');
+  const playerNameRow = document.getElementById('playerNameRow');
+  const profileSaveFeedback = document.getElementById('profileSaveFeedback');
 
   // Kindergarten DOM Elements
   const kindergartenCardEl = document.getElementById('kindergartenCard');
@@ -4841,20 +4870,20 @@
   const ProfileManager = {
     init() {
       try {
-        const stored = localStorage.getItem(STORAGE_PROFILES_KEY);
+        const stored = SafeStorage.getItem(STORAGE_PROFILES_KEY);
         if (stored) {
           profiles = JSON.parse(stored);
         }
       } catch (err) {
-        console.warn('Could not parse profiles from localStorage:', err);
+        console.warn('Could not parse profiles from storage:', err);
         profiles = [];
       }
 
       // Backward Compatibility & Migration:
       // If no profiles array exists yet, read legacy mathpop_total and mathpop_streak
       if (!Array.isArray(profiles) || profiles.length === 0) {
-        const legacyTotal = parseInt(localStorage.getItem('mathpop_total') || '0', 10);
-        const legacyStreak = parseInt(localStorage.getItem('mathpop_streak') || '0', 10);
+        const legacyTotal = parseInt(SafeStorage.getItem('mathpop_total') || '0', 10);
+        const legacyStreak = parseInt(SafeStorage.getItem('mathpop_streak') || '0', 10);
         const defaultProfile = {
           id: 'prof_' + Date.now(),
           name: 'Player 1',
@@ -4873,6 +4902,16 @@
               riddles: 0,
               science: 0
             }
+          },
+          session: {
+            tab: 'grade2',
+            mathTopic: 'g2_add',
+            kindergartenTrack: 'math',
+            kindergartenSlide: 0,
+            teaserTrack: 'logic',
+            teaserSlide: 0,
+            scienceTrack: 'space',
+            scienceSlide: 0
           }
         };
         profiles = [defaultProfile];
@@ -4886,16 +4925,29 @@
           if (typeof p.stats.currentStreak !== 'number') p.stats.currentStreak = 0;
           if (typeof p.stats.bestStreak !== 'number') p.stats.bestStreak = p.stats.currentStreak || 0;
           if (!p.stats.categories) p.stats.categories = {};
+          if (!p.session) {
+            p.session = {
+              tab: 'grade2',
+              mathTopic: 'g2_add',
+              kindergartenTrack: 'math',
+              kindergartenSlide: 0,
+              teaserTrack: 'logic',
+              teaserSlide: 0,
+              scienceTrack: 'space',
+              scienceSlide: 0
+            };
+          }
         });
 
-        activeProfileId = localStorage.getItem(STORAGE_ACTIVE_PROFILE_KEY);
+        activeProfileId = SafeStorage.getItem(STORAGE_ACTIVE_PROFILE_KEY);
         if (!activeProfileId || !profiles.some(p => p.id === activeProfileId)) {
           activeProfileId = profiles[0].id;
-          localStorage.setItem(STORAGE_ACTIVE_PROFILE_KEY, activeProfileId);
+          SafeStorage.setItem(STORAGE_ACTIVE_PROFILE_KEY, activeProfileId);
         }
       }
 
       this.syncActiveToGlobalState();
+      this.restoreActiveSession();
     },
 
     getProfiles() {
@@ -4904,18 +4956,83 @@
 
     saveProfiles() {
       try {
-        localStorage.setItem(STORAGE_PROFILES_KEY, JSON.stringify(profiles));
+        SafeStorage.setItem(STORAGE_PROFILES_KEY, JSON.stringify(profiles));
         if (activeProfileId) {
-          localStorage.setItem(STORAGE_ACTIVE_PROFILE_KEY, activeProfileId);
+          SafeStorage.setItem(STORAGE_ACTIVE_PROFILE_KEY, activeProfileId);
         }
         // Mirror active stats to legacy keys
         const active = this.getActiveProfile();
         if (active) {
-          localStorage.setItem('mathpop_streak', (active.stats.currentStreak || 0).toString());
-          localStorage.setItem('mathpop_total', (active.stats.totalCompleted || 0).toString());
+          SafeStorage.setItem('mathpop_streak', (active.stats.currentStreak || 0).toString());
+          SafeStorage.setItem('mathpop_total', (active.stats.totalCompleted || 0).toString());
         }
       } catch (err) {
-        console.error('Failed to save profiles to localStorage:', err);
+        console.error('Failed to save profiles to storage:', err);
+      }
+    },
+
+    saveSessionState() {
+      const active = this.getActiveProfile();
+      if (!active) return;
+      if (!active.session) active.session = {};
+      active.session.tab = activeTab;
+      active.session.mathTopic = gradeTopicState[activeTab] || 'g2_add';
+      active.session.kindergartenTrack = activeKindergartenTrack;
+      active.session.kindergartenSlide = trackKindergartenIndices[activeKindergartenTrack] || 0;
+      active.session.teaserTrack = activeTeaserTrack;
+      active.session.teaserSlide = trackSlideIndices[activeTeaserTrack] || 0;
+      active.session.scienceTrack = activeScienceTrack;
+      active.session.scienceSlide = trackScienceIndices[activeScienceTrack] || 0;
+      this.saveProfiles();
+    },
+
+    restoreActiveSession() {
+      const active = this.getActiveProfile();
+      if (!active || !active.session) return;
+      const s = active.session;
+      if (s.kindergartenTrack && Object.prototype.hasOwnProperty.call(trackKindergartenIndices, s.kindergartenTrack)) {
+        activeKindergartenTrack = s.kindergartenTrack;
+        if (typeof s.kindergartenSlide === 'number') {
+          trackKindergartenIndices[s.kindergartenTrack] = s.kindergartenSlide;
+        }
+      }
+      if (s.teaserTrack && Object.prototype.hasOwnProperty.call(trackSlideIndices, s.teaserTrack)) {
+        activeTeaserTrack = s.teaserTrack;
+        if (typeof s.teaserSlide === 'number') {
+          trackSlideIndices[s.teaserTrack] = s.teaserSlide;
+        }
+      }
+      if (s.scienceTrack && Object.prototype.hasOwnProperty.call(trackScienceIndices, s.scienceTrack)) {
+        activeScienceTrack = s.scienceTrack;
+        if (typeof s.scienceSlide === 'number') {
+          trackScienceIndices[s.scienceTrack] = s.scienceSlide;
+        }
+      }
+      if (s.mathTopic && s.tab && Object.prototype.hasOwnProperty.call(gradeTopicState, s.tab)) {
+        gradeTopicState[s.tab] = s.mathTopic;
+      }
+    },
+
+    getSessionDescription(p) {
+      if (!p || !p.session) return '2nd Grade';
+      const t = p.session.tab || 'grade2';
+      switch (t) {
+        case 'kindergarten':
+          return '🌱 Kindergarten';
+        case 'grade2':
+          return '2nd Grade Math';
+        case 'grade3':
+          return '3rd Grade Math';
+        case 'grade4':
+          return '4th Grade Math';
+        case 'grade5':
+          return '5th Grade Math';
+        case 'riddles':
+          return '🧩 Brain Teasers';
+        case 'science':
+          return '🔬 Science Lab';
+        default:
+          return 'Elementary Math';
       }
     },
 
@@ -4923,14 +5040,20 @@
       return profiles.find(p => p.id === activeProfileId) || profiles[0];
     },
 
-    setActiveProfile(id) {
+    setActiveProfile(id, autoSwitchTab = true) {
       const match = profiles.find(p => p.id === id);
       if (!match) return;
       activeProfileId = id;
       this.syncActiveToGlobalState();
       this.saveProfiles();
+      this.restoreActiveSession();
       updateStatsUI();
       renderProfileModalContent();
+
+      if (autoSwitchTab) {
+        const targetTab = (match.session && match.session.tab) || 'grade2';
+        switchTab(targetTab, true);
+      }
     },
 
     syncActiveToGlobalState() {
@@ -4986,10 +5109,21 @@
             riddles: 0,
             science: 0
           }
+        },
+        session: {
+          tab: activeTab || 'grade2',
+          mathTopic: gradeTopicState[activeTab] || 'g2_add',
+          kindergartenTrack: activeKindergartenTrack || 'math',
+          kindergartenSlide: 0,
+          teaserTrack: activeTeaserTrack || 'logic',
+          teaserSlide: 0,
+          scienceTrack: activeScienceTrack || 'space',
+          scienceSlide: 0
         }
       };
       profiles.push(newProfile);
-      this.setActiveProfile(newProfile.id);
+      this.setActiveProfile(newProfile.id, true);
+      return newProfile;
     },
 
     updateProfileInfo(id, newName, newAvatar) {
@@ -5148,6 +5282,17 @@
     });
   }
 
+  let feedbackTimer = null;
+  function showSaveFeedback(msg) {
+    if (!profileSaveFeedback) return;
+    profileSaveFeedback.textContent = msg;
+    profileSaveFeedback.classList.remove('hidden');
+    if (feedbackTimer) clearTimeout(feedbackTimer);
+    feedbackTimer = setTimeout(() => {
+      if (profileSaveFeedback) profileSaveFeedback.classList.add('hidden');
+    }, 2800);
+  }
+
   function renderProfileModalContent() {
     const active = ProfileManager.getActiveProfile();
     if (!active) return;
@@ -5167,6 +5312,9 @@
         const item = document.createElement('div');
         const isActive = p.id === active.id;
         item.className = 'profile-item' + (isActive ? ' active' : '');
+        item.setAttribute('role', 'button');
+        item.setAttribute('tabindex', '0');
+        item.title = isActive ? `${p.name} is the active player session` : `Click to switch to ${p.name}'s session`;
 
         const leftDiv = document.createElement('div');
         leftDiv.className = 'profile-item-left';
@@ -5184,7 +5332,8 @@
 
         const statsSpan = document.createElement('span');
         statsSpan.className = 'profile-item-stats';
-        statsSpan.textContent = `${p.stats.totalCompleted || 0} completed • Best: ${p.stats.bestStreak || 0}`;
+        const lastSessionDesc = ProfileManager.getSessionDescription(p);
+        statsSpan.textContent = `${p.stats.totalCompleted || 0} cards • ${lastSessionDesc}`;
 
         infoDiv.appendChild(nameSpan);
         infoDiv.appendChild(statsSpan);
@@ -5195,18 +5344,27 @@
         if (isActive) {
           const activeLabel = document.createElement('span');
           activeLabel.className = 'profile-item-active-label';
-          activeLabel.textContent = 'Active';
+          activeLabel.textContent = 'Active Playing';
           item.appendChild(activeLabel);
         } else {
           const switchBtn = document.createElement('button');
           switchBtn.type = 'button';
           switchBtn.className = 'btn-switch';
-          switchBtn.textContent = 'Switch';
-          switchBtn.addEventListener('click', () => {
-            ProfileManager.setActiveProfile(p.id);
-          });
+          switchBtn.textContent = 'Switch →';
           item.appendChild(switchBtn);
         }
+
+        // Entire row is clickable for frictionless switching!
+        item.addEventListener('click', () => {
+          if (!isActive) {
+            ProfileManager.setActiveProfile(p.id, true);
+            showSaveFeedback(`Switched to ${p.name}'s session! 🚀`);
+            playChimeSound(true);
+            setTimeout(() => {
+              closeProfileModal();
+            }, 300);
+          }
+        });
 
         profileList.appendChild(item);
       });
@@ -5244,6 +5402,7 @@
     });
     editPlayerForm.classList.remove('hidden');
     editPlayerNameInput.focus();
+    editPlayerNameInput.select();
   }
 
   function hideEditProfile() {
@@ -5294,8 +5453,8 @@
     }
   }
 
-  function switchTab(newTab) {
-    if (newTab === activeTab) return;
+  function switchTab(newTab, forceRefresh = false) {
+    if (newTab === activeTab && !forceRefresh) return;
     activeTab = newTab;
 
     tabButtons.forEach(btn => {
@@ -5304,23 +5463,36 @@
       btn.setAttribute('aria-selected', isMatch ? 'true' : 'false');
     });
 
+    // Clear feedback and typed inputs across all modes
+    if (answerInput) answerInput.value = '';
+    if (inputFeedback) { inputFeedback.textContent = ''; inputFeedback.className = 'input-feedback'; }
+    if (kindergartenAnswerInput) kindergartenAnswerInput.value = '';
+    if (kindergartenInputFeedback) { kindergartenInputFeedback.textContent = ''; kindergartenInputFeedback.className = 'input-feedback'; }
+    if (riddleAnswerInput) riddleAnswerInput.value = '';
+    if (riddleInputFeedback) { riddleInputFeedback.textContent = ''; riddleInputFeedback.className = 'input-feedback'; }
+    if (scienceAnswerInput) scienceAnswerInput.value = '';
+    if (scienceInputFeedback) { scienceInputFeedback.textContent = ''; scienceInputFeedback.className = 'input-feedback'; }
+
     if (activeTab === 'kindergarten') {
       if (mathSection) mathSection.classList.add('hidden');
       if (scienceSection) scienceSection.classList.add('hidden');
       if (riddlesSection) riddlesSection.classList.add('hidden');
       if (kindergartenSection) kindergartenSection.classList.remove('hidden');
+      kindergartenTrackButtons.forEach(b => b.classList.toggle('active', b.dataset.track === activeKindergartenTrack));
       showKindergartenSlide(trackKindergartenIndices[activeKindergartenTrack] || 0);
     } else if (activeTab === 'riddles') {
       if (mathSection) mathSection.classList.add('hidden');
       if (scienceSection) scienceSection.classList.add('hidden');
       if (kindergartenSection) kindergartenSection.classList.add('hidden');
       if (riddlesSection) riddlesSection.classList.remove('hidden');
+      teaserTrackButtons.forEach(b => b.classList.toggle('active', b.dataset.track === activeTeaserTrack));
       showSlide(trackSlideIndices[activeTeaserTrack] || 0);
     } else if (activeTab === 'science') {
       if (mathSection) mathSection.classList.add('hidden');
       if (riddlesSection) riddlesSection.classList.add('hidden');
       if (kindergartenSection) kindergartenSection.classList.add('hidden');
       if (scienceSection) scienceSection.classList.remove('hidden');
+      scienceTrackButtons.forEach(b => b.classList.toggle('active', b.dataset.track === activeScienceTrack));
       showScienceSlide(trackScienceIndices[activeScienceTrack] || 0);
     } else {
       if (riddlesSection) riddlesSection.classList.add('hidden');
@@ -5330,6 +5502,8 @@
       renderTopicBar();
       showNewMathProblem();
     }
+
+    ProfileManager.saveSessionState();
   }
 
   // ========================================================
@@ -5402,6 +5576,7 @@
       btn.classList.add('active');
       activeKindergartenTrack = btn.dataset.track;
       showKindergartenSlide(trackKindergartenIndices[activeKindergartenTrack] || 0);
+      ProfileManager.saveSessionState();
     });
   });
 
@@ -5442,6 +5617,7 @@
       btn.classList.add('active');
       activeTeaserTrack = btn.dataset.track;
       showSlide(trackSlideIndices[activeTeaserTrack] || 0);
+      ProfileManager.saveSessionState();
     });
   });
 
@@ -5464,12 +5640,13 @@
       btn.classList.add('active');
       activeScienceTrack = btn.dataset.track;
       showScienceSlide(trackScienceIndices[activeScienceTrack] || 0);
+      ProfileManager.saveSessionState();
     });
   });
 
   soundToggleBtn.addEventListener('click', () => {
     soundEnabled = !soundEnabled;
-    localStorage.setItem('mathpop_sound', soundEnabled.toString());
+    SafeStorage.setItem('mathpop_sound', soundEnabled.toString());
     soundToggleBtn.textContent = soundEnabled ? '🔊' : '🔇';
   });
 
@@ -5503,6 +5680,13 @@
     });
   }
 
+  if (modalPlayBtn) {
+    modalPlayBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeProfileModal();
+    });
+  }
+
   if (profileModal) {
     profileModal.addEventListener('click', (e) => {
       if (e.target === profileModal) {
@@ -5514,6 +5698,18 @@
   if (editProfileBtn) {
     editProfileBtn.addEventListener('click', (e) => {
       e.preventDefault();
+      showEditProfile();
+    });
+  }
+
+  if (playerNameRow) {
+    playerNameRow.addEventListener('click', () => {
+      showEditProfile();
+    });
+  }
+
+  if (modalActiveAvatar) {
+    modalActiveAvatar.addEventListener('click', () => {
       showEditProfile();
     });
   }
@@ -5530,7 +5726,12 @@
       e.preventDefault();
       const active = ProfileManager.getActiveProfile();
       if (active && editPlayerNameInput) {
-        ProfileManager.updateProfileInfo(active.id, editPlayerNameInput.value, selectedEditAvatar);
+        const newName = editPlayerNameInput.value.trim();
+        if (newName) {
+          ProfileManager.updateProfileInfo(active.id, newName, selectedEditAvatar);
+          showSaveFeedback(`✓ Nickname updated to "${newName}"!`);
+          playChimeSound(false);
+        }
       }
       hideEditProfile();
     });
@@ -5554,7 +5755,12 @@
     newPlayerForm.addEventListener('submit', (e) => {
       e.preventDefault();
       if (newPlayerNameInput) {
-        ProfileManager.createProfile(newPlayerNameInput.value, selectedNewAvatar);
+        const created = ProfileManager.createProfile(newPlayerNameInput.value, selectedNewAvatar);
+        showSaveFeedback(`✓ Created ${created.name}! Let's play! 🚀`);
+        playChimeSound(true);
+        setTimeout(() => {
+          closeProfileModal();
+        }, 350);
       }
       hideNewPlayerForm();
     });

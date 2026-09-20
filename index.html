@@ -20,9 +20,10 @@
       </div>
 
       <div class="header-controls">
-        <button id="profileBtn" class="profile-pill" aria-label="Player Profile" title="Switch or view player profile">
+        <button id="profileBtn" class="profile-pill" aria-label="Player Profile" title="Switch player or edit nickname">
           <span id="profileAvatar" class="profile-avatar">🎈</span>
           <span id="profileName" class="profile-name">Player 1</span>
+          <span class="profile-pill-arrow">▾</span>
         </button>
         <div class="streak-pill" id="streakPill" title="Current streak">
           <span class="star-icon">⭐</span>
@@ -324,29 +325,37 @@
   <div id="profileModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
     <div class="modal-card">
       <div class="modal-header">
-        <h2 id="profileModalTitle" class="modal-title">👤 Player Profile</h2>
-        <button id="closeProfileModalBtn" class="modal-close-btn" aria-label="Close Profile Modal">&times;</button>
+        <div class="modal-header-left">
+          <h2 id="profileModalTitle" class="modal-title">👤 Player Profile</h2>
+        </div>
+        <div class="modal-header-right">
+          <button id="modalPlayBtn" class="btn-play-header" title="Resume learning">Play Now 🚀</button>
+          <button id="closeProfileModalBtn" class="modal-close-btn" aria-label="Close Profile Modal">&times;</button>
+        </div>
       </div>
 
       <div class="modal-body">
         <!-- Active Player Showcase -->
         <div class="active-player-card">
           <div class="player-identity">
-            <span id="modalActiveAvatar" class="player-avatar-large">🎈</span>
+            <span id="modalActiveAvatar" class="player-avatar-large" title="Click to change avatar">🎈</span>
             <div class="player-info">
-              <div class="player-name-row">
+              <div class="player-name-row" id="playerNameRow" title="Click to edit nickname">
                 <h3 id="modalActiveName" class="player-name">Player 1</h3>
                 <button id="editProfileBtn" class="mini-btn" title="Edit nickname or avatar">✏️ Edit</button>
               </div>
-              <span class="player-status-badge">Active Player</span>
+              <span class="player-status-badge">Active Session</span>
             </div>
           </div>
+
+          <!-- Notification feedback banner -->
+          <div id="profileSaveFeedback" class="save-feedback hidden"></div>
 
           <!-- Edit Player Form (Hidden by default) -->
           <form id="editPlayerForm" class="edit-player-form hidden">
             <div class="form-row">
-              <input type="text" id="editPlayerNameInput" maxlength="15" placeholder="Nickname" required />
-              <button type="submit" class="btn-primary-sm">Save</button>
+              <input type="text" id="editPlayerNameInput" maxlength="15" placeholder="Nickname" required autocomplete="off" />
+              <button type="submit" class="btn-primary-sm" id="savePlayerNameBtn">Save</button>
               <button type="button" id="cancelEditPlayerBtn" class="btn-secondary-sm">Cancel</button>
             </div>
             <div class="avatar-select-label">Pick Avatar:</div>
@@ -383,15 +392,15 @@
         <!-- Profile Switcher & Creator -->
         <div class="profile-switcher-section">
           <div class="section-header-row">
-            <h4>Switch Player</h4>
+            <h4>Switch Player Session</h4>
             <button id="toggleNewPlayerBtn" class="btn-text">+ New Player</button>
           </div>
 
           <!-- Add New Player Form (Hidden by default) -->
           <form id="newPlayerForm" class="new-player-form hidden">
             <div class="form-row">
-              <input type="text" id="newPlayerNameInput" maxlength="15" placeholder="Enter nickname..." required />
-              <button type="submit" class="btn-primary-sm">Add</button>
+              <input type="text" id="newPlayerNameInput" maxlength="15" placeholder="Enter nickname..." required autocomplete="off" />
+              <button type="submit" class="btn-primary-sm">Create &amp; Play</button>
               <button type="button" id="cancelNewPlayerBtn" class="btn-secondary-sm">Cancel</button>
             </div>
             <div class="avatar-select-label">Pick an Avatar:</div>
