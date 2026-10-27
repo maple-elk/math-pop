@@ -1559,7 +1559,7 @@
   // ========================================================
   const ProfileManager = (function() {
     const STORAGE_KEY = 'math_pop_profiles_v1';
-    const AVATARS = ['📐', '🧭', '🔭', '🧪', '⚡', '🌟', '🧩', '🚀', '🦉', '🦊', '🐬', '🍀'];
+    const AVATARS = ['🎈', '🚀', '🦊', '🐱', '🐶', '🐻', '🦁', '🦄', '🦖', '🌟', '🐼', '🐨'];
 
     let store = {
       activeProfileId: null,
@@ -1568,14 +1568,14 @@
     let selectedNewAvatar = AVATARS[0];
     let selectedEditAvatar = AVATARS[0];
 
-    function createDefaultProfile(name = 'Learner', avatar = '📐') {
+    function createDefaultProfile(name = 'Player 1', avatar = '🎈') {
       const legacyScore = parseInt(SafeStorage.getItem('mathpop_total') || '0', 10) || 0;
       const legacyStreak = parseInt(SafeStorage.getItem('mathpop_streak') || '0', 10) || 0;
 
       return {
         id: 'prof_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-        name: name.trim() || 'Learner',
-        avatar: avatar || '📐',
+        name: name.trim() || 'Player 1',
+        avatar: avatar || '🎈',
         createdAt: new Date().toISOString(),
         stats: {
           totalCompleted: legacyScore,
@@ -1638,7 +1638,7 @@
       } catch (e) {
         // Fallback to default
       }
-      const firstProfile = createDefaultProfile('Learner', '📐');
+      const firstProfile = createDefaultProfile('Player 1', '🎈');
       store = {
         activeProfileId: firstProfile.id,
         profiles: [firstProfile]

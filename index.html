@@ -3,31 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Math &amp; Logic Studio — Preschool to 5th Grade Math, Logic &amp; Science</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📐</text></svg>">
+  <title>Math Pop! 🚀 Preschool, Elementary Math, Logic &amp; Science Lab</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎈</text></svg>">
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="app-container">
     <!-- Header Area -->
     <header class="quiz-header">
       <div class="logo">
-        <span class="logo-icon">📐</span>
-        <h1>Math &amp; Logic</h1>
+        <span class="logo-icon">🎈</span>
+        <h1>Math Pop!</h1>
       </div>
 
       <div class="header-controls">
-        <button id="profileBtn" class="profile-pill" aria-label="Learner Profile" title="Switch learner or edit name">
-          <span id="profileAvatar" class="profile-avatar">📐</span>
-          <span id="profileName" class="profile-name">Student 1</span>
+        <button id="profileBtn" class="profile-pill" aria-label="Player Profile" title="Switch player or edit nickname">
+          <span id="profileAvatar" class="profile-avatar">🎈</span>
+          <span id="profileName" class="profile-name">Player 1</span>
           <span class="profile-pill-arrow">▾</span>
         </button>
         <div class="streak-pill" id="streakPill" title="Current streak">
-          <span class="star-icon">★</span>
-          <span id="streakCount">0</span> streak
+          <span class="star-icon">⭐</span>
+          <span id="streakCount">0</span> in a row!
         </div>
         <button id="soundToggle" class="icon-btn" aria-label="Toggle Sound" title="Toggle Sound">
           🔊
@@ -38,10 +38,10 @@
     <!-- Top Primary Navigation Tabs: Grades & Activities -->
     <nav class="app-tabs" role="tablist" aria-label="Grades and Activities">
       <button class="app-tab" id="tabPreschool" role="tab" aria-selected="false" data-tab="preschool">
-        Preschool
+        🎨 Preschool
       </button>
       <button class="app-tab" id="tabKindergarten" role="tab" aria-selected="false" data-tab="kindergarten">
-        Kindergarten
+        🌱 Kindergarten
       </button>
       <button class="app-tab" id="tabGrade1" role="tab" aria-selected="false" data-tab="grade1">
         1st Grade
@@ -59,10 +59,10 @@
         5th Grade
       </button>
       <button class="app-tab" id="tabRiddles" role="tab" aria-selected="false" data-tab="riddles">
-        Logic &amp; Spatial
+        🧩 Teasers
       </button>
       <button class="app-tab" id="tabScience" role="tab" aria-selected="false" data-tab="science">
-        Science Lab
+        🔬 Science Lab
       </button>
     </nav>
  
@@ -391,10 +391,10 @@
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-header-left">
-          <h2 id="profileModalTitle" class="modal-title">Learner Profile</h2>
+          <h2 id="profileModalTitle" class="modal-title">👤 Player Profile</h2>
         </div>
         <div class="modal-header-right">
-          <button id="modalPlayBtn" class="btn-play-header" title="Resume session">Done</button>
+          <button id="modalPlayBtn" class="btn-play-header" title="Resume learning">Play Now 🚀</button>
           <button id="closeProfileModalBtn" class="modal-close-btn" aria-label="Close Profile Modal">&times;</button>
         </div>
       </div>
@@ -403,11 +403,11 @@
         <!-- Active Player Showcase -->
         <div class="active-player-card">
           <div class="player-identity">
-            <span id="modalActiveAvatar" class="player-avatar-large" title="Click to change icon">📐</span>
+            <span id="modalActiveAvatar" class="player-avatar-large" title="Click to change avatar">🎈</span>
             <div class="player-info">
-              <div class="player-name-row" id="playerNameRow" title="Click to edit name">
-                <h3 id="modalActiveName" class="player-name">Student 1</h3>
-                <button id="editProfileBtn" class="mini-btn" title="Edit name or icon">Edit</button>
+              <div class="player-name-row" id="playerNameRow" title="Click to edit nickname">
+                <h3 id="modalActiveName" class="player-name">Player 1</h3>
+                <button id="editProfileBtn" class="mini-btn" title="Edit nickname or icon">Edit</button>
               </div>
               <span class="player-status-badge">Active Profile</span>
             </div>
@@ -419,11 +419,11 @@
           <!-- Edit Player Form (Hidden by default) -->
           <form id="editPlayerForm" class="edit-player-form hidden">
             <div class="form-row">
-              <input type="text" id="editPlayerNameInput" maxlength="15" placeholder="Name" required autocomplete="off" />
+              <input type="text" id="editPlayerNameInput" maxlength="15" placeholder="Nickname" required autocomplete="off" />
               <button type="submit" class="btn-primary-sm" id="savePlayerNameBtn">Save</button>
               <button type="button" id="cancelEditPlayerBtn" class="btn-secondary-sm">Cancel</button>
             </div>
-            <div class="avatar-select-label">Select Icon:</div>
+            <div class="avatar-select-label">Select Avatar:</div>
             <div class="avatar-picker-grid" id="editAvatarPicker">
               <!-- Icons injected by JS -->
             </div>
@@ -457,18 +457,18 @@
         <!-- Profile Switcher & Creator -->
         <div class="profile-switcher-section">
           <div class="section-header-row">
-            <h4>Switch Profile</h4>
-            <button id="toggleNewPlayerBtn" class="btn-text">+ New Profile</button>
+            <h4>Switch Player Session</h4>
+            <button id="toggleNewPlayerBtn" class="btn-text">+ New Player</button>
           </div>
 
           <!-- Add New Player Form (Hidden by default) -->
           <form id="newPlayerForm" class="new-player-form hidden">
             <div class="form-row">
-              <input type="text" id="newPlayerNameInput" maxlength="15" placeholder="Enter name..." required autocomplete="off" />
+              <input type="text" id="newPlayerNameInput" maxlength="15" placeholder="Enter nickname..." required autocomplete="off" />
               <button type="submit" class="btn-primary-sm">Create</button>
               <button type="button" id="cancelNewPlayerBtn" class="btn-secondary-sm">Cancel</button>
             </div>
-            <div class="avatar-select-label">Select Icon:</div>
+            <div class="avatar-select-label">Select Avatar:</div>
             <div class="avatar-picker-grid" id="newAvatarPicker">
               <!-- Icons injected by JS -->
             </div>
