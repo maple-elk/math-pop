@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Iframe Browser Rapid Routing Stress Runner</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; margin: 0; }
+    iframe { width: 1024px; height: 768px; border: 1px solid #ccc; }
+    .pass { color: green; font-weight: bold; }
+    .fail { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Iframe Browser Rapid Routing Stress Runner</h1>
+  <div id="results">Starting iframe stress test...</div>
+  <iframe id="appFrame" src="../index.html#preschool/patterns/1"></iframe>
+
+  <script>
+    (async function() {
+      const el = document.getElementById('results');
+      const iframe = document.getElementById('appFrame');
+
+      // Wait for iframe to load completely
+      await new Promise((resolve) => {
+        if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
+          resolve();
+        } else {
+          iframe.addEventListener('load', resolve, { once: true });
+        }
+      });
+
+      // Extra 100ms for app bootstrap inside iframe
+      await new Promise(r => setTimeout(r, 100));
+
+      const win = iframe.contentWindow;
+      const recordedErrors = [];
+
+      win.addEventListener('error', (e) => {
+        recordedErrors.push({ type: 'error', message: e.message || String(e) });
+      });
+      win.addEventListener('unhandledrejection', (e) => {
+        recordedErrors.push({ type: 'unhandledrejection', reason: e.reason ? (e.reason.message || String(e.reason)) : 'unknown' });
+      });
+
+      const sequence = [
+        '#kindergarten/math/3',
+        '#grade1/g1_sub10',
+        '#preschool/patterns/-99999',
+        '#grade4/g4_unusual/abc',
+        '#alien_math',
+        '#science/space/4',
+        '#riddles/visual/5',
+        '#grade3/g3_mult?foo=bar#extra',
+        '#grade1/%20%20',
+        '#preschool/patterns/99999999',
+        '#grade5/g5_pemdas',
+        '#kindergarten/riddles/7',
+        '#science/density/2',
+        '#riddles/mental/1',
+        '#grade2/g2_chal',
+        '#grade4/g4_frac',
+        '#grade2/g2_unusual/8',
+        '#preschool/counting/12',
+        '#preschool/shapes/2',
+        '#kindergarten/puzzles/11',
+        '#science/chemistry/3',
+        '#science/air/1',
+        '#riddles/logic/12',
+        '#grade5/g5_unusual/10',
+        '#grade3/g3_geom',
+        '#grade1/g1_make10',
+        '#grade2/g2_sub',
+        '#grade4/g4_prime',
+        '#grade3/g3_div',
+        '#grade5/g5_volume',
+        '#preschool/sorting/4',
+        '#kindergarten/questions/9',
+        '#riddles/visual/2',
+        '#science/space/1',
+        '#grade1/g1_add20',
+        '#grade2/g2_mix',
+        '#grade3/g3_addsub',
+        '#grade4/g4_dec',
+        '#grade5/g5_dec_ops',
+        '#invalid/route/here',
+        '#grade1/g1_tens',
+        '#grade2/g2_add',
+        '#preschool/patterns/1',
+        '#kindergarten/math/1',
+        '#science/space/2',
+        '#riddles/logic/3',
+        '#grade4/g4_unusual/4',
+        '#grade5/g5_frac_unlike',
+        '#grade3/g3_mix',
+        '#science/space/3' // 50th!
+      ];
+
+      const tStart = performance.now();
+      for (let i = 0; i < sequence.length; i++) {
+        win.location.hash = sequence[i];
+        // small yield to allow browser microtask/hashchange dispatch
+        await new Promise(r => setTimeout(r, 10));
+      }
+      await new Promise(r => setTimeout(r, 100));
+      const tDuration = performance.now() - tStart;
+
+      const finalCanonical = (win.AppRouter && win.AppRouter.getCurrentCanonicalHash()) || 'missing';
+      const activeTabBtn = iframe.contentDocument.querySelector('.app-tab.active');
+      const activeTab = activeTabBtn ? activeTabBtn.getAttribute('data-tab') : 'none';
+      const activeSlideBtn = iframe.contentDocument.querySelector('#scienceSlideDots .slide-step-btn.active');
+      const activeSlideNum = activeSlideBtn ? activeSlideBtn.textContent.trim() : 'none';
+
+      const pass = (
+        recordedErrors.length === 0 &&
+        finalCanonical === '#science/space/3' &&
+        activeTab === 'science' &&
+        activeSlideNum === '3'
+      );
+
+      el.className = pass ? 'pass' : 'fail';
+      el.id = 'browser-stress-results';
+      el.setAttribute('data-status', pass ? 'PASS' : 'FAIL');
+      el.setAttribute('data-errors', String(recordedErrors.length));
+      el.setAttribute('data-duration-ms', Math.round(tDuration));
+      el.setAttribute('data-final-canonical', finalCanonical);
+      el.setAttribute('data-active-tab', activeTab);
+      el.setAttribute('data-active-slide', activeSlideNum);
+      el.textContent = `STRESS_COMPLETE: status=${pass ? 'PASS' : 'FAIL'}, count=${sequence.length}, errors=${recordedErrors.length}, final=${finalCanonical}, tab=${activeTab}, slide=${activeSlideNum}, time=${Math.round(tDuration)}ms`;
+    })();
+  </script>
+</body>
+</html>

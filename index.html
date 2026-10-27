@@ -3,31 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Math Pop! 🚀 Elementary Math, Brain Teasers & Science Lab</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎈</text></svg>">
+  <title>Math &amp; Logic Studio — Preschool to 5th Grade Math, Logic &amp; Science</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📐</text></svg>">
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="app-container">
     <!-- Header Area -->
     <header class="quiz-header">
       <div class="logo">
-        <span class="logo-icon">🎈</span>
-        <h1>Math Pop!</h1>
+        <span class="logo-icon">📐</span>
+        <h1>Math &amp; Logic</h1>
       </div>
 
       <div class="header-controls">
-        <button id="profileBtn" class="profile-pill" aria-label="Player Profile" title="Switch player or edit nickname">
-          <span id="profileAvatar" class="profile-avatar">🎈</span>
-          <span id="profileName" class="profile-name">Player 1</span>
+        <button id="profileBtn" class="profile-pill" aria-label="Learner Profile" title="Switch learner or edit name">
+          <span id="profileAvatar" class="profile-avatar">📐</span>
+          <span id="profileName" class="profile-name">Student 1</span>
           <span class="profile-pill-arrow">▾</span>
         </button>
         <div class="streak-pill" id="streakPill" title="Current streak">
-          <span class="star-icon">⭐</span>
-          <span id="streakCount">0</span> in a row!
+          <span class="star-icon">★</span>
+          <span id="streakCount">0</span> streak
         </div>
         <button id="soundToggle" class="icon-btn" aria-label="Toggle Sound" title="Toggle Sound">
           🔊
@@ -37,8 +37,11 @@
 
     <!-- Top Primary Navigation Tabs: Grades & Activities -->
     <nav class="app-tabs" role="tablist" aria-label="Grades and Activities">
+      <button class="app-tab" id="tabPreschool" role="tab" aria-selected="false" data-tab="preschool">
+        Preschool
+      </button>
       <button class="app-tab" id="tabKindergarten" role="tab" aria-selected="false" data-tab="kindergarten">
-        🌱 Kindergarten
+        Kindergarten
       </button>
       <button class="app-tab" id="tabGrade1" role="tab" aria-selected="false" data-tab="grade1">
         1st Grade
@@ -56,76 +59,133 @@
         5th Grade
       </button>
       <button class="app-tab" id="tabRiddles" role="tab" aria-selected="false" data-tab="riddles">
-        🧩 Teasers
+        Logic &amp; Spatial
       </button>
       <button class="app-tab" id="tabScience" role="tab" aria-selected="false" data-tab="science">
-        🔬 Science Lab
+        Science Lab
       </button>
     </nav>
+ 
+    <!-- Main Application Landmark Container -->
+    <main id="mainApp" class="app-main">
 
-    <!-- TAB SECTION: KINDERGARTEN (MATH, QUESTIONS, RIDDLES, PUZZLES) -->
+      <!-- TAB SECTION: PRESCHOOL (PATTERNS, COUNTING 1-5, SHAPES & SIZES, SORTING) -->
+      <section id="preschoolSection" class="tab-panel hidden" role="tabpanel">
+        <div class="mode-selector" id="preschoolTrackBar" role="radiogroup" aria-label="Preschool Problem Sets">
+          <button class="preschool-track-btn active" data-track="patterns">Patterns (12)</button>
+          <button class="preschool-track-btn" data-track="counting">Counting 1–5 (12)</button>
+          <button class="preschool-track-btn" data-track="shapes">Shapes &amp; Sizes (12)</button>
+          <button class="preschool-track-btn" data-track="sorting">Sorting &amp; Matching (12)</button>
+        </div>
+
+        <!-- Sequential Numbered Navigation Toolbar -->
+        <div class="slide-nav-toolbar preschool-nav-toolbar" aria-label="Preschool Problem Navigation">
+          <button id="prevPreschoolSlideBtn" class="slide-nav-btn" title="Previous Problem (Left Arrow)">← Prev</button>
+          <div class="slide-progress-info">
+            <span class="slide-counter-badge preschool-counter-badge" id="preschoolSlideIndicator">Problem 1 of 12</span>
+            <div class="slide-dots" id="preschoolSlideDots"></div>
+          </div>
+          <button id="nextPreschoolSlideBtn" class="slide-nav-btn" title="Next Problem (Right Arrow)">Next →</button>
+          <button id="preschoolSpeakBtn" class="icon-btn speak-btn" title="Read question aloud" aria-label="Read Question Aloud">🔊 Listen</button>
+        </div>
+
+        <!-- Preschool Problem Card Stage -->
+        <section class="card-stage" aria-label="Preschool Problem Stage">
+          <div class="popup-card preschool-card" id="preschoolCard">
+            <div class="card-badge preschool-badge" id="preschoolBadge">Preschool • Patterns • Problem 1 of 12</div>
+
+            <div class="riddle-header">
+              <h2 class="riddle-question preschool-question" id="preschoolQuestion">What comes next in the pattern?</h2>
+            </div>
+
+            <div class="riddle-viewport preschool-viewport" id="preschoolViewport">
+              <!-- SVG injected here -->
+            </div>
+
+            <div class="interactive-input-zone" id="preschoolInputZone">
+              <input
+                type="text"
+                id="preschoolAnswerInput"
+                aria-label="Preschool answer input"
+                placeholder="Type answer (optional) or press Space"
+                autocomplete="off"
+              />
+              <div class="input-feedback" id="preschoolInputFeedback" aria-live="polite" role="status"></div>
+            </div>
+
+            <div class="riddle-solution-box preschool-solution-box hidden" id="preschoolSolutionBox">
+              <div class="riddle-answer-title preschool-answer-title" id="preschoolAnswerTitle">Answer</div>
+              <div class="riddle-explanation preschool-explanation" id="preschoolExplanation">Explanation</div>
+            </div>
+
+            <div class="spacebar-bar-wrapper">
+              <button id="preschoolActionBtn" class="spacebar-btn preschool-action-btn">
+                <span class="key-cap">SPACE</span>
+                <span class="action-text" id="preschoolActionText">Reveal Answer</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+    <!-- TAB SECTION: KINDERGARTEN (MATH, WORLD & NATURE, RIDDLES, PUZZLES) -->
     <section id="kindergartenSection" class="tab-panel hidden" role="tabpanel">
-      <!-- Kindergarten Tracks: Math, Questions, Riddles, Puzzles -->
-      <div class="mode-selector" id="kindergartenTrackBar" role="radiogroup" aria-label="Kindergarten Activities">
-        <button class="kindergarten-track-btn active" data-track="math">🔢 Counting &amp; Math (12)</button>
-        <button class="kindergarten-track-btn" data-track="questions">❓ Curious Questions (12)</button>
-        <button class="kindergarten-track-btn" data-track="riddles">🦁 Playful Riddles (12)</button>
-        <button class="kindergarten-track-btn" data-track="puzzles">🧩 Shape Puzzles (12)</button>
+      <div class="mode-selector" id="kindergartenTrackBar" role="radiogroup" aria-label="Kindergarten Problem Sets">
+        <button class="kindergarten-track-btn active" data-track="math">Counting &amp; Math (12)</button>
+        <button class="kindergarten-track-btn" data-track="questions">World &amp; Nature (12)</button>
+        <button class="kindergarten-track-btn" data-track="riddles">Riddles (12)</button>
+        <button class="kindergarten-track-btn" data-track="puzzles">Shapes &amp; Logic (12)</button>
       </div>
 
-      <!-- Sequential Slide Navigation Toolbar -->
-      <div class="slide-nav-toolbar kindergarten-nav-toolbar" aria-label="Kindergarten Slide Navigation">
-        <button id="prevKindergartenSlideBtn" class="slide-nav-btn" title="Previous Slide (or Left Arrow)">← Prev</button>
+      <!-- Sequential Numbered Navigation Toolbar -->
+      <div class="slide-nav-toolbar kindergarten-nav-toolbar" aria-label="Kindergarten Problem Navigation">
+        <button id="prevKindergartenSlideBtn" class="slide-nav-btn" title="Previous Problem (Left Arrow)">← Prev</button>
         <div class="slide-progress-info">
-          <span class="slide-counter-badge kindergarten-counter-badge" id="kindergartenSlideIndicator">Slide 1 of 12</span>
+          <span class="slide-counter-badge kindergarten-counter-badge" id="kindergartenSlideIndicator">Problem 1 of 12</span>
           <div class="slide-dots" id="kindergartenSlideDots"></div>
         </div>
-        <button id="nextKindergartenSlideBtn" class="slide-nav-btn" title="Next Slide (or Right Arrow)">Next →</button>
-        <button id="kindergartenSpeakBtn" class="icon-btn kindergarten-speak-btn" title="Read aloud to me!" aria-label="Read Question Aloud">🔊 Listen</button>
+        <button id="nextKindergartenSlideBtn" class="slide-nav-btn" title="Next Problem (Right Arrow)">Next →</button>
+        <button id="kindergartenSpeakBtn" class="icon-btn speak-btn" title="Read question aloud" aria-label="Read Question Aloud">🔊 Listen</button>
       </div>
 
-      <!-- Main Kindergarten Pop-Up Card -->
-      <main class="card-stage">
-        <div class="popup-card kindergarten-card" id="kindergartenCard">
-          <div class="card-badge kindergarten-badge" id="kindergartenBadge">🌱 Kindergarten • Counting &amp; Math</div>
+        <!-- Kindergarten Problem Card Stage -->
+        <section class="card-stage" aria-label="Kindergarten Problem Stage">
+          <div class="popup-card kindergarten-card" id="kindergartenCard">
+            <div class="card-badge kindergarten-badge" id="kindergartenBadge">Kindergarten • Counting &amp; Math • Problem 1 of 12</div>
 
-          <!-- Kindergarten Question Header -->
-          <div class="riddle-header">
-            <h2 class="riddle-question kindergarten-question" id="kindergartenQuestion">How many ducklings are in the pond?</h2>
-          </div>
+            <div class="riddle-header">
+              <h2 class="riddle-question kindergarten-question" id="kindergartenQuestion">How many ducks are in the pond?</h2>
+            </div>
 
-          <!-- Graphic Viewport (Rich SVGs) -->
-          <div class="riddle-viewport kindergarten-viewport" id="kindergartenViewport">
-            <!-- SVG injected here -->
-          </div>
+            <div class="riddle-viewport kindergarten-viewport" id="kindergartenViewport">
+              <!-- SVG injected here -->
+            </div>
 
-          <!-- Optional Input Zone -->
-          <div class="interactive-input-zone" id="kindergartenInputZone">
-            <input 
-              type="text" 
-              id="kindergartenAnswerInput" 
-              placeholder="Type answer (or hit Space)" 
-              autocomplete="off"
-            />
-            <div class="input-feedback" id="kindergartenInputFeedback"></div>
-          </div>
+            <div class="interactive-input-zone" id="kindergartenInputZone">
+              <input 
+                type="text" 
+                id="kindergartenAnswerInput" 
+                aria-label="Kindergarten answer input"
+                placeholder="Type answer (optional) or press Space" 
+                autocomplete="off"
+              />
+              <div class="input-feedback" id="kindergartenInputFeedback" aria-live="polite" role="status"></div>
+            </div>
 
-          <!-- Solution & Explanation Box -->
-          <div class="riddle-solution-box kindergarten-solution-box hidden" id="kindergartenSolutionBox">
-            <div class="riddle-answer-title kindergarten-answer-title" id="kindergartenAnswerTitle">Answer: 5 Ducklings! 🦆</div>
-            <div class="riddle-explanation kindergarten-explanation" id="kindergartenExplanation">Count them: 1, 2, 3, 4, 5 swimming happily!</div>
-          </div>
+            <div class="riddle-solution-box kindergarten-solution-box hidden" id="kindergartenSolutionBox">
+              <div class="riddle-answer-title kindergarten-answer-title" id="kindergartenAnswerTitle">Answer: 5 Ducks</div>
+              <div class="riddle-explanation kindergarten-explanation" id="kindergartenExplanation">Count them from left to right: 1, 2, 3, 4, 5.</div>
+            </div>
 
-          <!-- Spacebar Action Button -->
-          <div class="spacebar-bar-wrapper">
-            <button id="kindergartenActionBtn" class="spacebar-btn kindergarten-action-btn">
-              <span class="key-cap">SPACE</span>
-              <span class="action-text" id="kindergartenActionText">Reveal Answer</span>
-            </button>
+            <div class="spacebar-bar-wrapper">
+              <button id="kindergartenActionBtn" class="spacebar-btn kindergarten-action-btn">
+                <span class="key-cap">SPACE</span>
+                <span class="action-text" id="kindergartenActionText">Reveal Answer</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </main>
-    </section>
+        </section>
+      </section>
 
     <!-- TAB SECTION: MATH (Grades 1-5) -->
     <section id="mathSection" class="tab-panel active" role="tabpanel">
@@ -134,192 +194,194 @@
         <!-- Topic buttons injected dynamically based on grade -->
       </div>
 
-      <!-- Main Flashcard Pop-Up Card -->
-      <main class="card-stage">
-        <div class="popup-card" id="card">
-          <div class="card-badge" id="cardBadge">2nd Grade • Addition</div>
+      <!-- Numbered Navigation Toolbar (Visible for finite curated math sets) -->
+      <div class="slide-nav-toolbar hidden" id="mathSetToolbar" aria-label="Problem Set Navigation">
+        <button id="prevMathSlideBtn" class="slide-nav-btn" title="Previous Problem (Left Arrow)">← Prev</button>
+        <div class="slide-progress-info">
+          <span class="slide-counter-badge" id="mathSlideIndicator">Problem 1 of 10</span>
+          <div class="slide-dots" id="mathSlideDots"></div>
+        </div>
+        <button id="nextMathSlideBtn" class="slide-nav-btn" title="Next Problem (Right Arrow)">Next →</button>
+      </div>
 
-          <!-- Problem Expression Display Area -->
-          <div class="equation-container" id="equationContainer">
-            <div class="equation" id="equation">
-              <span class="num" id="numA">8</span>
-              <span class="op" id="operator">+</span>
-              <span class="num" id="numB">7</span>
-              <span class="equals">=</span>
-              <span class="solution-slot" id="solutionSlot">
-                <span class="question-mark" id="questionMark">?</span>
-                <span class="solution-val hidden" id="solutionVal">15</span>
-              </span>
+        <!-- Math Problem Card Stage -->
+        <section class="card-stage" aria-label="Math Problem Stage">
+          <div class="popup-card" id="card">
+            <div class="card-badge" id="cardBadge">2nd Grade • Addition</div>
+
+            <!-- Problem Expression Display Area -->
+            <div class="equation-container" id="equationContainer">
+              <div class="equation" id="equation">
+                <span class="num" id="numA">8</span>
+                <span class="op" id="operator">+</span>
+                <span class="num" id="numB">7</span>
+                <span class="equals">=</span>
+                <span class="solution-slot" id="solutionSlot">
+                  <span class="question-mark" id="questionMark">?</span>
+                  <span class="solution-val hidden" id="solutionVal">15</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Optional Answer Input -->
+            <div class="interactive-input-zone" id="inputZone">
+              <input 
+                type="text" 
+                id="answerInput" 
+                aria-label="Math answer input"
+                placeholder="Type answer (optional) or press Space" 
+                autocomplete="off"
+              />
+              <div class="input-feedback" id="inputFeedback" aria-live="polite" role="status"></div>
+            </div>
+
+            <!-- Visualizer & Step-by-Step Explanation Area -->
+            <div class="visualizer" id="visualizer" aria-label="Visual representation">
+              <div class="dots-group" id="dotsA"></div>
+              <div class="visualizer-op" id="visualizerOp">+</div>
+              <div class="dots-group" id="dotsB"></div>
+            </div>
+
+            <!-- Detailed Step Breakdown (Fractions, PEMDAS, Multi-step) -->
+            <div class="step-explanation hidden" id="stepExplanation">
+              <!-- Injected step breakdown -->
+            </div>
+
+            <!-- Bottom Spacebar Action Prompt Bar -->
+            <div class="spacebar-bar-wrapper">
+              <button id="actionBtn" class="spacebar-btn">
+                <span class="key-cap">SPACE</span>
+                <span class="action-text" id="actionText">Reveal Answer</span>
+              </button>
             </div>
           </div>
+        </section>
+      </section>
 
-          <!-- Optional Child Answer Input -->
-          <div class="interactive-input-zone" id="inputZone">
-            <input 
-              type="text" 
-              id="answerInput" 
-              placeholder="Type answer (or hit Space)" 
-              autocomplete="off"
-            />
-            <div class="input-feedback" id="inputFeedback"></div>
-          </div>
-
-          <!-- Visualizer & Step-by-Step Explanation Area -->
-          <div class="visualizer" id="visualizer" aria-label="Visual representation">
-            <div class="dots-group" id="dotsA"></div>
-            <div class="visualizer-op" id="visualizerOp">+</div>
-            <div class="dots-group" id="dotsB"></div>
-          </div>
-
-          <!-- Detailed Step Breakdown (Fractions, PEMDAS, Multi-step) -->
-          <div class="step-explanation hidden" id="stepExplanation">
-            <!-- Injected step breakdown -->
-          </div>
-
-          <!-- Bottom Spacebar Action Prompt Bar -->
-          <div class="spacebar-bar-wrapper">
-            <button id="actionBtn" class="spacebar-btn">
-              <span class="key-cap">SPACE</span>
-              <span class="action-text" id="actionText">Reveal Solution</span>
-            </button>
-          </div>
-        </div>
-      </main>
-    </section>
-
-    <!-- TAB SECTION: SPATIAL & VISUAL RIDDLES / BRAIN TEASERS -->
+    <!-- TAB SECTION: SPATIAL & VISUAL RIDDLES / LOGIC -->
     <section id="riddlesSection" class="tab-panel hidden" role="tabpanel">
-      <!-- Teaser Tracks: Logic Riddles, Visual & Spatial, Mental 3D -->
-      <div class="mode-selector" id="teaserTrackBar" role="radiogroup" aria-label="Teaser Track">
-        <button class="teaser-track-btn active" data-track="logic">🕵️ Logic Riddles (12 Slides)</button>
-        <button class="teaser-track-btn" data-track="visual">🎨 Visual &amp; Spatial (10 Slides)</button>
-        <button class="teaser-track-btn" data-track="mental">🧠 Mental 3D (6 Slides)</button>
+      <div class="mode-selector" id="teaserTrackBar" role="radiogroup" aria-label="Logic &amp; Spatial Tracks">
+        <button class="teaser-track-btn active" data-track="logic">Logic Problems (12)</button>
+        <button class="teaser-track-btn" data-track="visual">Visual &amp; Spatial (10)</button>
+        <button class="teaser-track-btn" data-track="mental">3D Geometry (6)</button>
       </div>
 
-      <!-- Sequential Slide Navigation Toolbar -->
-      <div class="slide-nav-toolbar" aria-label="Slide Navigation">
-        <button id="prevSlideBtn" class="slide-nav-btn" title="Previous Slide (or Left Arrow)">← Prev</button>
+      <!-- Sequential Numbered Navigation Toolbar -->
+      <div class="slide-nav-toolbar" aria-label="Problem Navigation">
+        <button id="prevSlideBtn" class="slide-nav-btn" title="Previous Problem (Left Arrow)">← Prev</button>
         <div class="slide-progress-info">
-          <span class="slide-counter-badge" id="slideIndicator">Slide 1 of 12</span>
+          <span class="slide-counter-badge" id="slideIndicator">Problem 1 of 12</span>
           <div class="slide-dots" id="slideDots"></div>
         </div>
-        <button id="nextSlideBtn" class="slide-nav-btn" title="Next Slide (or Right Arrow)">Next →</button>
+        <button id="nextSlideBtn" class="slide-nav-btn" title="Next Problem (Right Arrow)">Next →</button>
       </div>
 
-      <!-- Main Riddle Pop-Up Card -->
-      <main class="card-stage">
-        <div class="popup-card riddle-card" id="riddleCard">
-          <div class="card-badge" id="riddleBadge">Slide 1 of 12 • Logic Riddle</div>
+        <!-- Logic and Spatial Problem Card Stage -->
+        <section class="card-stage" aria-label="Logic and Spatial Problem Stage">
+          <div class="popup-card riddle-card" id="riddleCard">
+            <div class="card-badge" id="riddleBadge">Logic Problems • Problem 1 of 12</div>
 
-          <!-- Riddle Question Header -->
-          <div class="riddle-header">
-            <h2 class="riddle-question" id="riddleQuestion">What comes next in the pattern?</h2>
-          </div>
+            <div class="riddle-header">
+              <h2 class="riddle-question" id="riddleQuestion">What comes next in the pattern?</h2>
+            </div>
 
-          <!-- Graphic Viewport (SVGs rendered dynamically) -->
-          <div class="riddle-viewport" id="riddleViewport">
-            <!-- SVG injected here -->
-          </div>
+            <div class="riddle-viewport" id="riddleViewport">
+              <!-- SVG injected here -->
+            </div>
 
-          <!-- Optional Riddle Input Zone (e.g. for typing number of edges/vertices) -->
-          <div class="interactive-input-zone" id="riddleInputZone">
-            <input 
-              type="text" 
-              id="riddleAnswerInput" 
-              placeholder="Type answer (or hit Space)" 
-              autocomplete="off"
-            />
-            <div class="input-feedback" id="riddleInputFeedback"></div>
-          </div>
+            <div class="interactive-input-zone" id="riddleInputZone">
+              <input 
+                type="text" 
+                id="riddleAnswerInput" 
+                aria-label="Logic puzzle answer input"
+                placeholder="Type answer (optional) or press Space" 
+                autocomplete="off"
+              />
+              <div class="input-feedback" id="riddleInputFeedback" aria-live="polite" role="status"></div>
+            </div>
 
-          <!-- Solution & Explanation Display -->
-          <div class="riddle-solution-box hidden" id="riddleSolutionBox">
-            <div class="riddle-answer-title" id="riddleAnswerTitle">Answer: Triangle</div>
-            <div class="riddle-explanation" id="riddleExplanation">The pattern repeats: Circle, Square, Triangle!</div>
-          </div>
+            <div class="riddle-solution-box hidden" id="riddleSolutionBox">
+              <div class="riddle-answer-title" id="riddleAnswerTitle">Answer: Triangle</div>
+              <div class="riddle-explanation" id="riddleExplanation">The sequence repeats: Circle, Square, Triangle.</div>
+            </div>
 
-          <!-- Spacebar Action Button -->
-          <div class="spacebar-bar-wrapper">
-            <button id="riddleActionBtn" class="spacebar-btn">
-              <span class="key-cap">SPACE</span>
-              <span class="action-text" id="riddleActionText">Reveal Solution</span>
-            </button>
+            <div class="spacebar-bar-wrapper">
+              <button id="riddleActionBtn" class="spacebar-btn">
+                <span class="key-cap">SPACE</span>
+                <span class="action-text" id="riddleActionText">Reveal Answer</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </main>
-    </section>
+        </section>
+      </section>
  
     <!-- TAB SECTION: SCIENCE LAB (PHYSICS, ENGINEERING & CHEMISTRY) -->
     <section id="scienceSection" class="tab-panel hidden" role="tabpanel">
-      <!-- Science Tracks: Space & Gravity, Air & Friction, Density & Fluids, Chemistry & Matter -->
       <div class="mode-selector" id="scienceTrackBar" role="radiogroup" aria-label="Science Track">
-        <button class="science-track-btn active" data-track="space">🌌 Space &amp; Gravity</button>
-        <button class="science-track-btn" data-track="air">💨 Air &amp; Friction</button>
-        <button class="science-track-btn" data-track="density">🌊 Density &amp; Viscosity</button>
-        <button class="science-track-btn" data-track="chemistry">⚗️ Chemistry &amp; Matter</button>
+        <button class="science-track-btn active" data-track="space">Space &amp; Gravity (4)</button>
+        <button class="science-track-btn" data-track="air">Air &amp; Friction (4)</button>
+        <button class="science-track-btn" data-track="density">Density &amp; Fluids (4)</button>
+        <button class="science-track-btn" data-track="chemistry">Chemistry &amp; Mechanics (4)</button>
       </div>
 
-      <!-- Sequential Slide Navigation Toolbar for Science -->
-      <div class="slide-nav-toolbar science-nav-toolbar" aria-label="Science Slide Navigation">
-        <button id="prevScienceSlideBtn" class="slide-nav-btn" title="Previous Slide (or Left Arrow)">← Prev</button>
+      <!-- Sequential Numbered Navigation Toolbar for Science -->
+      <div class="slide-nav-toolbar science-nav-toolbar" aria-label="Science Problem Navigation">
+        <button id="prevScienceSlideBtn" class="slide-nav-btn" title="Previous Problem (Left Arrow)">← Prev</button>
         <div class="slide-progress-info">
-          <span class="slide-counter-badge" id="scienceSlideIndicator">Slide 1 of 4</span>
+          <span class="slide-counter-badge" id="scienceSlideIndicator">Problem 1 of 4</span>
           <div class="slide-dots" id="scienceSlideDots"></div>
         </div>
-        <button id="nextScienceSlideBtn" class="slide-nav-btn" title="Next Slide (or Right Arrow)">Next →</button>
+        <button id="nextScienceSlideBtn" class="slide-nav-btn" title="Next Problem (Right Arrow)">Next →</button>
       </div>
 
-      <!-- Main Science Pop-Up Card -->
-      <main class="card-stage">
-        <div class="popup-card science-card" id="scienceCard">
-          <div class="card-badge science-badge" id="scienceBadge">Slide 1 of 4 • Space &amp; Gravity</div>
+        <!-- Science Lab Problem Card Stage -->
+        <section class="card-stage" aria-label="Science Lab Problem Stage">
+          <div class="popup-card science-card" id="scienceCard">
+            <div class="card-badge science-badge" id="scienceBadge">Science Lab • Space &amp; Gravity • Problem 1 of 4</div>
 
-          <!-- Science Question Header -->
-          <div class="riddle-header">
-            <h2 class="riddle-question" id="scienceQuestion">Science Question Goes Here</h2>
-          </div>
+            <div class="riddle-header">
+              <h2 class="riddle-question" id="scienceQuestion">Science Question</h2>
+            </div>
 
-          <!-- Graphic Viewport (SVGs and Interactive Diagrams) -->
-          <div class="riddle-viewport science-viewport" id="scienceViewport">
-            <!-- Diagram injected here -->
-          </div>
+            <div class="riddle-viewport science-viewport" id="scienceViewport">
+              <!-- Diagram injected here -->
+            </div>
 
-          <!-- Optional Science Input Zone -->
-          <div class="interactive-input-zone" id="scienceInputZone">
-            <input 
-              type="text" 
-              id="scienceAnswerInput" 
-              placeholder="What do you think happens? (or hit Space)" 
-              autocomplete="off"
-            />
-            <div class="input-feedback" id="scienceInputFeedback"></div>
-          </div>
+            <div class="interactive-input-zone" id="scienceInputZone">
+              <input 
+                type="text" 
+                id="scienceAnswerInput" 
+                aria-label="Science prediction answer input"
+                placeholder="Type prediction (optional) or press Space" 
+                autocomplete="off"
+              />
+              <div class="input-feedback" id="scienceInputFeedback" aria-live="polite" role="status"></div>
+            </div>
 
-          <!-- Solution & Science Principle Explanation Display -->
-          <div class="riddle-solution-box science-solution-box hidden" id="scienceSolutionBox">
-            <div class="riddle-answer-title" id="scienceAnswerTitle">Answer</div>
-            <div class="riddle-explanation" id="scienceExplanation">Science Explanation</div>
-          </div>
+            <div class="riddle-solution-box science-solution-box hidden" id="scienceSolutionBox">
+              <div class="riddle-answer-title" id="scienceAnswerTitle">Answer</div>
+              <div class="riddle-explanation" id="scienceExplanation">Explanation</div>
+            </div>
 
-          <!-- Spacebar Action Button -->
-          <div class="spacebar-bar-wrapper">
-            <button id="scienceActionBtn" class="spacebar-btn science-action-btn">
-              <span class="key-cap">SPACE</span>
-              <span class="action-text" id="scienceActionText">Reveal Science Secret</span>
-            </button>
+            <div class="spacebar-bar-wrapper">
+              <button id="scienceActionBtn" class="spacebar-btn science-action-btn">
+                <span class="key-cap">SPACE</span>
+                <span class="action-text" id="scienceActionText">Reveal Answer</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </main>
-    </section>
+        </section>
+      </section>
+    </main>
 
     <!-- Bottom Helper Instructions -->
     <footer class="quiz-footer">
       <div class="footer-tip">
-        <span class="key-hint">⌨️ Tap <strong>Space Bar</strong> to reveal answer &amp; advance to next problem!</span>
+        <span class="key-hint">Press <strong>Spacebar</strong> to reveal the answer and advance to the next problem.</span>
       </div>
       <div class="stats-bar">
         <span>Completed: <strong id="totalCompleted">0</strong></span>
-        <button id="resetStatsBtn" class="link-btn">Reset Score</button>
+        <button id="resetStatsBtn" class="link-btn">Reset Progress</button>
       </div>
     </footer>
   </div>
@@ -329,10 +391,10 @@
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-header-left">
-          <h2 id="profileModalTitle" class="modal-title">👤 Player Profile</h2>
+          <h2 id="profileModalTitle" class="modal-title">Learner Profile</h2>
         </div>
         <div class="modal-header-right">
-          <button id="modalPlayBtn" class="btn-play-header" title="Resume learning">Play Now 🚀</button>
+          <button id="modalPlayBtn" class="btn-play-header" title="Resume session">Done</button>
           <button id="closeProfileModalBtn" class="modal-close-btn" aria-label="Close Profile Modal">&times;</button>
         </div>
       </div>
@@ -341,13 +403,13 @@
         <!-- Active Player Showcase -->
         <div class="active-player-card">
           <div class="player-identity">
-            <span id="modalActiveAvatar" class="player-avatar-large" title="Click to change avatar">🎈</span>
+            <span id="modalActiveAvatar" class="player-avatar-large" title="Click to change icon">📐</span>
             <div class="player-info">
-              <div class="player-name-row" id="playerNameRow" title="Click to edit nickname">
-                <h3 id="modalActiveName" class="player-name">Player 1</h3>
-                <button id="editProfileBtn" class="mini-btn" title="Edit nickname or avatar">✏️ Edit</button>
+              <div class="player-name-row" id="playerNameRow" title="Click to edit name">
+                <h3 id="modalActiveName" class="player-name">Student 1</h3>
+                <button id="editProfileBtn" class="mini-btn" title="Edit name or icon">Edit</button>
               </div>
-              <span class="player-status-badge">Active Session</span>
+              <span class="player-status-badge">Active Profile</span>
             </div>
           </div>
 
@@ -357,13 +419,13 @@
           <!-- Edit Player Form (Hidden by default) -->
           <form id="editPlayerForm" class="edit-player-form hidden">
             <div class="form-row">
-              <input type="text" id="editPlayerNameInput" maxlength="15" placeholder="Nickname" required autocomplete="off" />
+              <input type="text" id="editPlayerNameInput" maxlength="15" placeholder="Name" required autocomplete="off" />
               <button type="submit" class="btn-primary-sm" id="savePlayerNameBtn">Save</button>
               <button type="button" id="cancelEditPlayerBtn" class="btn-secondary-sm">Cancel</button>
             </div>
-            <div class="avatar-select-label">Pick Avatar:</div>
+            <div class="avatar-select-label">Select Icon:</div>
             <div class="avatar-picker-grid" id="editAvatarPicker">
-              <!-- Emojis injected by JS -->
+              <!-- Icons injected by JS -->
             </div>
           </form>
 
@@ -371,7 +433,7 @@
           <div class="profile-stats-grid">
             <div class="stat-box primary">
               <span class="stat-number" id="modalTotalCompleted">0</span>
-              <span class="stat-label">Cards Completed</span>
+              <span class="stat-label">Completed</span>
             </div>
             <div class="stat-box">
               <span class="stat-number" id="modalCurrentStreak">0</span>
@@ -379,13 +441,13 @@
             </div>
             <div class="stat-box">
               <span class="stat-number" id="modalBestStreak">0</span>
-              <span class="stat-label">Best Streak ⭐</span>
+              <span class="stat-label">Best Streak</span>
             </div>
           </div>
 
           <!-- Detailed Category Breakdown -->
           <div class="category-breakdown-section">
-            <h4 class="breakdown-title">Cards Completed by Topic</h4>
+            <h4 class="breakdown-title">Completed by Section</h4>
             <div class="category-chips-grid" id="categoryBreakdownGrid">
               <!-- Injected dynamically -->
             </div>
@@ -395,20 +457,20 @@
         <!-- Profile Switcher & Creator -->
         <div class="profile-switcher-section">
           <div class="section-header-row">
-            <h4>Switch Player Session</h4>
-            <button id="toggleNewPlayerBtn" class="btn-text">+ New Player</button>
+            <h4>Switch Profile</h4>
+            <button id="toggleNewPlayerBtn" class="btn-text">+ New Profile</button>
           </div>
 
           <!-- Add New Player Form (Hidden by default) -->
           <form id="newPlayerForm" class="new-player-form hidden">
             <div class="form-row">
-              <input type="text" id="newPlayerNameInput" maxlength="15" placeholder="Enter nickname..." required autocomplete="off" />
-              <button type="submit" class="btn-primary-sm">Create &amp; Play</button>
+              <input type="text" id="newPlayerNameInput" maxlength="15" placeholder="Enter name..." required autocomplete="off" />
+              <button type="submit" class="btn-primary-sm">Create</button>
               <button type="button" id="cancelNewPlayerBtn" class="btn-secondary-sm">Cancel</button>
             </div>
-            <div class="avatar-select-label">Pick an Avatar:</div>
+            <div class="avatar-select-label">Select Icon:</div>
             <div class="avatar-picker-grid" id="newAvatarPicker">
-              <!-- Emojis injected by JS -->
+              <!-- Icons injected by JS -->
             </div>
           </form>
 
@@ -421,12 +483,12 @@
         <!-- Danger & Backup Management -->
         <div class="profile-management-section">
           <div class="danger-actions">
-            <button id="resetProfileStatsBtn" class="btn-warning-sm">Reset Active Stats</button>
+            <button id="resetProfileStatsBtn" class="btn-warning-sm">Reset Progress</button>
             <button id="deleteProfileBtn" class="btn-danger-sm hidden">Delete Profile</button>
           </div>
           <div class="backup-actions">
-            <button id="exportProfilesBtn" class="link-action">📥 Export Backup</button>
-            <button id="importProfilesBtn" class="link-action">📤 Import Data</button>
+            <button id="exportProfilesBtn" class="link-action">Export JSON</button>
+            <button id="importProfilesBtn" class="link-action">Import JSON</button>
             <input type="file" id="importFileInput" accept=".json" class="hidden" />
           </div>
         </div>
@@ -435,6 +497,15 @@
   </div>
 
   <canvas id="confettiCanvas"></canvas>
-  <script src="app.js"></script>
+  <!-- Modular Application Scripts (Zero Build / Direct file:// & Web compatible) -->
+  <script src="js/storage.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/speech.js"></script>
+  <script src="js/data/math-data.js"></script>
+  <script src="js/data/logic-data.js"></script>
+  <script src="js/data/science-data.js"></script>
+  <script src="js/data/preschool-data.js"></script>
+  <script src="js/data/kindergarten-data.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
