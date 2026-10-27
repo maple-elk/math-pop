@@ -130,26 +130,15 @@ The router supports three granular levels of deep linking:
 
 The application includes a comprehensive, standalone test suite requiring zero external npm dependencies. The suite executes directly via vanilla Node.js VM and headless Google Chrome.
 
-### Running the Test Suites
+### Running the Test Suite
 
-Execute the master test runner CLI (1,590 passing assertions across Tiers 1–4):
-```bash
-node tests/test_runner.js
-```
-
-Fast execution (skips headless Chrome browser launch, runs in ~0.05s):
+Execute the test runner CLI (`node tests/test_runner.js`, or `--fast` to skip headless Chrome):
 ```bash
 node tests/test_runner.js --fast
 ```
 
-Run independent adversarial stress tests (3,018 assertions covering generators, fractions, remainders, and edge cases):
-```bash
-node tests/test_adversarial_m2_1.js
-```
-
-### Test Suite Architecture & Audit Reports
-- **[`REVIEW_REPORT.md`](REVIEW_REPORT.md)**: Full comprehensive app-wide audit report detailing verification across all 190 curated slides, 28 math topic generators, multi-learner profile storage, audio mute synchronization, strict mode avatar crash fixes, and W3C accessibility landmarks.
-- **[`TEST_READY.md`](TEST_READY.md)**: Test suite inventory, tiered assertion breakdown, and execution guides for individual component suites (`tests/test_content.js`, `tests/test_routing.js`, `tests/test_systems.js`, `tests/test_dom_headless.js`).
+### Audit Report
+- **[`REVIEW_REPORT.md`](REVIEW_REPORT.md)**: App-wide audit report covering all 190 curated slides, 28 math topic generators, multi-learner profile storage, audio mute synchronization, strict-mode avatar fixes, and accessibility improvements.
 
 ---
 
